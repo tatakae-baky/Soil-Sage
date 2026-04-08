@@ -1,0 +1,61 @@
+@import 'tailwindcss';
+
+/*
+ * Soil Sage design tokens — Airbnb-inspired per DESIGN.md.
+ * Uses Rausch Red as brand accent on a pure-white canvas with
+ * near-black text, three-layer card shadows, and generous radii.
+ */
+
+@theme {
+  /* ── Brand ── */
+  --color-brand: #ff385c;
+  --color-brand-dark: #e00b41;
+  --color-error: #c13515;
+
+  /* ── Text ── */
+  --color-text-primary: #222222;
+  --color-text-secondary: #6a6a6a;
+  --color-text-disabled: rgba(0, 0, 0, 0.24);
+
+  /* ── Surface ── */
+  --color-surface: #ffffff;
+  --color-surface-secondary: #f7f7f7;
+  --color-surface-button: #f2f2f2;
+  --color-border: #dddddd;
+  --color-border-light: #ebebeb;
+
+  /* ── Shadows ── */
+  --shadow-card: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+  --shadow-hover: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+
+  /* ── Radii ── */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 32px;
+  --radius-full: 50%;
+}
+
+/* ── Base reset ── */
+body {
+  margin: 0;
+  font-family: 'Circular', -apple-system, system-ui, Roboto, 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  color: #222222;
+  background: #ffffff;
+}
+
+#root {
+  min-height: 100svh;
+}
+
+/* ── Utility classes mapped to design tokens ── */
+@utility shadow-card {
+  box-shadow: rgba(0, 0, 0, 0.02) 0px 0px 0px 1px,
+    rgba(0, 0, 0, 0.04) 0px 2px 6px, rgba(0, 0, 0, 0.1) 0px 4px 8px;
+}
+@utility shadow-hover {
+  box-shadow: rgba(0, 0, 0, 0.08) 0px 4px 12px;
+}
