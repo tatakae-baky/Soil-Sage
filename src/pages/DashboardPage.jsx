@@ -1,46 +1,29 @@
-import { useMemo } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
-import { useHasRole } from '../hooks/useHasRole'
-import { landsApi, rentalsApi, notificationsApi } from '../lib/api'
+import {
+  landsApi,
+  inventoryApi,
+  notificationsApi,
+  communitiesApi,
+} from '../lib/api'
 
 /**
- * Authenticated dashboard — lands, rentals, and notification snapshot.
+ * Authenticated dashboard — overview cards with live stats from the API.
  */
 export function DashboardPage() {
   const { user } = useAuth()
   const qc = useQueryClient()
-  const isOwner = useHasRole('land_owner')
 
-  const landsQ = useQuery({
-    queryKey: ['lands', 'mine'],
-    queryFn: () => landsApi.mine(),
-  })
-  const outgoingQ = useQuery({
-    queryKey: ['rentals', 'outgoing'],
-    queryFn: () => rentalsApi.outgoing(),
-  })
-  const incomingQ = useQuery({
-    queryKey: ['rentals', 'incoming'],
-    queryFn: () => rentalsApi.incoming(),
-    enabled: isOwner,
-  })
-  const notifQ = useQuery({
-    queryKey: ['notifications'],
-    queryFn: () => notificationsApi.list(),
-  })
+  const landsQ = useQuery({ queryKey: ['lands', 'mine'], queryFn: () => landsApi.mine() })
+  const invQ = useQuery({ queryKey: ['inventory', 'items'], queryFn: () => inventoryApi.items() })
+  const notifQ = useQuery({ queryKey: ['notifications'], queryFn: () => notificationsApi.list() })
+  const commQ = useQuery({ queryKey: ['communities'], queryFn: () => communitiesApi.list() })
 
   const landCount = landsQ.data?.lands?.length ?? '—'
-  const unreadCount = (notifQ.data?.notifications || []).filter((n) => !n.read)
-    .length
-
-  const pendingRentals = useMemo(() => {
-    const out = outgoingQ.data?.requests || []
-    const inc = incomingQ.data?.requests || []
-    const pending = (r) => r.status === 'pending'
-    return out.filter(pending).length + inc.filter(pending).length
-  }, [outgoingQ.data, incomingQ.data])
+  const itemCount = invQ.data?.items?.length ?? '—'
+  const unreadCount = (notifQ.data?.notifications || []).filter((n) => !n.read).length
+  const communityCount = commQ.data?.communities?.length ?? '—'
 
   const approvalBadge = (status) => {
     const map = {
@@ -59,12 +42,14 @@ export function DashboardPage() {
 
   const cards = [
     { label: 'My lands', value: landCount, to: '/app/lands' },
-    { label: 'Pending rental actions', value: pendingRentals, to: '/app/rentals' },
+    { label: 'Inventory items', value: itemCount, to: '/app/inventory' },
     { label: 'Unread notifications', value: unreadCount, to: '#' },
+    { label: 'Communities', value: communityCount, to: '/app/communities' },
   ]
 
   return (
     <div className="space-y-10">
+      {/* ── Welcome ── */}
       <div className="rounded-[20px] border border-[#ebebeb] bg-white p-6 shadow-card">
         <h1 className="text-[22px] font-semibold tracking-[-0.44px] text-[#222222]">
           Welcome, {user?.name}
@@ -88,7 +73,8 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      {/* ── Stats grid ── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map((c) => (
           <Link
             key={c.label}
@@ -103,6 +89,7 @@ export function DashboardPage() {
         ))}
       </div>
 
+      {/* ── Notifications ── */}
       <section>
         <div className="flex items-center justify-between">
           <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
@@ -141,18 +128,13 @@ export function DashboardPage() {
         </div>
       </section>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      {/* ── Quick links ── */}
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {[
-          {
-            label: 'Add land',
-            to: '/app/lands',
-            desc: 'Register land with GPS and soil details',
-          },
-          {
-            label: 'Browse rentals',
-            to: '/app/rentals',
-            desc: 'Send or manage rental requests',
-          },
+          { label: 'Add land', to: '/app/lands', desc: 'Register land with GPS and soil details' },
+          { label: 'Browse rentals', to: '/app/rentals', desc: 'Send or manage rental requests' },
+          { label: 'Join a community', to: '/app/communities', desc: 'Post questions and discuss with peers' },
+          { label: 'Manage inventory', to: '/app/inventory', desc: 'Track seeds, tools, and fertilizers' },
         ].map((l) => (
           <Link
             key={l.label}

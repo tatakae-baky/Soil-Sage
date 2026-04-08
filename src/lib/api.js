@@ -84,3 +84,67 @@ export const notificationsApi = {
   markRead: (id) => api(`/notifications/${id}/read`, { method: 'PATCH' }),
   readAll: () => api('/notifications/read-all', { method: 'POST' }),
 }
+
+/* ─── Communities ─── */
+export const communitiesApi = {
+  list: () => api('/communities'),
+  create: (body) => api('/communities', { method: 'POST', json: body }),
+  getOne: (id) => api(`/communities/${id}`),
+  join: (id) => api(`/communities/${id}/join`, { method: 'POST' }),
+  posts: (id) => api(`/communities/${id}/posts`),
+  createPost: (id, body) =>
+    api(`/communities/${id}/posts`, { method: 'POST', json: body }),
+}
+
+/* ─── Posts ─── */
+export const postsApi = {
+  getOne: (id) => api(`/posts/${id}`),
+  update: (id, body) => api(`/posts/${id}`, { method: 'PATCH', json: body }),
+  remove: (id) => api(`/posts/${id}`, { method: 'DELETE' }),
+  comments: (id) => api(`/posts/${id}/comments`),
+  addComment: (id, body) =>
+    api(`/posts/${id}/comments`, { method: 'POST', json: body }),
+}
+
+/* ─── Comments ─── */
+export const commentsApi = {
+  update: (id, body) =>
+    api(`/comments/${id}`, { method: 'PATCH', json: body }),
+  remove: (id) => api(`/comments/${id}`, { method: 'DELETE' }),
+}
+
+/* ─── Likes ─── */
+export const likesApi = {
+  like: (body) => api('/likes', { method: 'POST', json: body }),
+  unlike: (body) => api('/likes', { method: 'DELETE', json: body }),
+}
+
+/* ─── Saved posts ─── */
+export const savedPostsApi = {
+  list: () => api('/saved-posts'),
+  save: (postId) => api('/saved-posts', { method: 'POST', json: { postId } }),
+  unsave: (postId) =>
+    api('/saved-posts', { method: 'DELETE', json: { postId } }),
+}
+
+/* ─── Inventory ─── */
+export const inventoryApi = {
+  items: () => api('/inventory/items'),
+  create: (body) => api('/inventory/items', { method: 'POST', json: body }),
+  update: (id, body) =>
+    api(`/inventory/items/${id}`, { method: 'PATCH', json: body }),
+  remove: (id) => api(`/inventory/items/${id}`, { method: 'DELETE' }),
+  logUsage: (id, body) =>
+    api(`/inventory/items/${id}/usage`, { method: 'POST', json: body }),
+  usageHistory: (id) => api(`/inventory/items/${id}/usage`),
+  aiSummary: () => api('/inventory/summary/for-ai'),
+}
+
+/* ─── Admin ─── */
+export const adminApi = {
+  pendingApprovals: () => api('/admin/pending-approvals'),
+  setApproval: (body) =>
+    api('/admin/approvals', { method: 'PATCH', json: body }),
+  moderatePost: (postId, body) =>
+    api(`/admin/posts/${postId}`, { method: 'PATCH', json: body }),
+}

@@ -1,5 +1,6 @@
 import { Link, NavLink, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useHasRole } from '../hooks/useHasRole'
 
 /**
  * Authenticated app shell — Airbnb-style white sticky header,
@@ -7,6 +8,7 @@ import { useAuth } from '../hooks/useAuth'
  */
 export function AppShell() {
   const { user, logout } = useAuth()
+  const isAdmin = useHasRole('admin')
 
   const base =
     'rounded-[8px] px-4 py-2 text-sm font-medium transition-colors'
@@ -39,6 +41,17 @@ export function AppShell() {
             <NavLink to="/app/rentals" className={linkClass}>
               Rentals
             </NavLink>
+            <NavLink to="/app/communities" className={linkClass}>
+              Communities
+            </NavLink>
+            <NavLink to="/app/inventory" className={linkClass}>
+              Inventory
+            </NavLink>
+            {isAdmin && (
+              <NavLink to="/app/admin" className={linkClass}>
+                Admin
+              </NavLink>
+            )}
           </nav>
 
           <div className="flex items-center gap-3">
