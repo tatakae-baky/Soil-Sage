@@ -55,3 +55,32 @@ export const authApi = {
 export const usersApi = {
   updateMe: (body) => api('/users/me', { method: 'PATCH', json: body }),
 }
+
+/* ─── Lands ─── */
+export const landsApi = {
+  create: (body) => api('/lands', { method: 'POST', json: body }),
+  mine: () => api('/lands/mine'),
+  getOne: (id) => api(`/lands/${id}`),
+  update: (id, body) => api(`/lands/${id}`, { method: 'PATCH', json: body }),
+  remove: (id) => api(`/lands/${id}`, { method: 'DELETE' }),
+  nearby: (params) => {
+    const q = new URLSearchParams(params).toString()
+    return api(`/lands/nearby?${q}`)
+  },
+}
+
+/* ─── Rentals ─── */
+export const rentalsApi = {
+  create: (body) => api('/rentals/requests', { method: 'POST', json: body }),
+  outgoing: () => api('/rentals/requests/mine/outgoing'),
+  incoming: () => api('/rentals/requests/mine/incoming'),
+  decide: (id, body) =>
+    api(`/rentals/requests/${id}`, { method: 'PATCH', json: body }),
+}
+
+/* ─── Notifications ─── */
+export const notificationsApi = {
+  list: () => api('/notifications'),
+  markRead: (id) => api(`/notifications/${id}/read`, { method: 'PATCH' }),
+  readAll: () => api('/notifications/read-all', { method: 'POST' }),
+}

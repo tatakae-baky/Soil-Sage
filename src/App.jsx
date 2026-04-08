@@ -5,6 +5,8 @@ import { HomePage } from './pages/HomePage'
 import { LoginPage } from './pages/LoginPage'
 import { RegisterPage } from './pages/RegisterPage'
 import { DashboardPage } from './pages/DashboardPage'
+import { LandsPage } from './pages/LandsPage'
+import { RentalsPage } from './pages/RentalsPage'
 
 /**
  * Top-level routes: public marketing/auth, protected /app/* feature stubs.
@@ -24,6 +26,8 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="lands" element={<LandsPage />} />
+        <Route path="rentals" element={<RentalsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

@@ -33,6 +33,12 @@ export function AppShell() {
             <NavLink to="/app" end className={linkClass}>
               Dashboard
             </NavLink>
+            <NavLink to="/app/lands" className={linkClass}>
+              Lands
+            </NavLink>
+            <NavLink to="/app/rentals" className={linkClass}>
+              Rentals
+            </NavLink>
           </nav>
 
           <div className="flex items-center gap-3">

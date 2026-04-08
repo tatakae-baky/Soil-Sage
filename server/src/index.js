@@ -5,6 +5,9 @@ import { connectDatabase } from './config/database.js'
 
 import authRoutes from './routes/auth.js'
 import userRoutes from './routes/users.js'
+import landRoutes from './routes/lands.js'
+import rentalRoutes from './routes/rentals.js'
+import notificationRoutes from './routes/notifications.js'
 
 const app = express()
 
@@ -23,6 +26,9 @@ app.get('/health', (_req, res) => {
 const v1 = express.Router()
 v1.use('/auth', authRoutes)
 v1.use('/users', userRoutes)
+v1.use('/lands', landRoutes)
+v1.use('/rentals', rentalRoutes)
+v1.use('/notifications', notificationRoutes)
 
 app.use('/api/v1', v1)
 
