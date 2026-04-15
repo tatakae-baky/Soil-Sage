@@ -15,6 +15,12 @@ import commentRoutes from './routes/comments.js'
 import likeRoutes from './routes/likes.js'
 import savedPostRoutes from './routes/savedPosts.js'
 import inventoryRoutes from './routes/inventory.js'
+import diagnosisRoutes from './routes/diagnoses.js'
+import providerRoutes from './routes/providers.js'
+import followRoutes from './routes/follows.js'
+import discoveryRoutes from './routes/discovery.js'
+import discoveryCommentRoutes from './routes/discoveryComments.js'
+import chatRoutes from './routes/chat.js'
 
 const app = express()
 
@@ -43,6 +49,12 @@ v1.use('/comments', commentRoutes)
 v1.use('/likes', likeRoutes)
 v1.use('/saved-posts', savedPostRoutes)
 v1.use('/inventory', inventoryRoutes)
+v1.use('/diagnoses', diagnosisRoutes)
+v1.use('/providers', providerRoutes)
+v1.use('/follows', followRoutes)
+v1.use('/discovery', discoveryRoutes)
+v1.use('/discovery-comments', discoveryCommentRoutes)
+v1.use('/chat', chatRoutes)
 
 app.use('/api/v1', v1)
 

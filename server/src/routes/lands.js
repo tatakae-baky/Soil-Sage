@@ -1,6 +1,8 @@
 import { Router } from 'express'
+import mongoose from 'mongoose'
 import { z } from 'zod'
 import { Land } from '../models/Land.js'
+import { User } from '../models/User.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRoles } from '../middleware/rbac.js'
 import { sendError } from '../utils/errors.js'
@@ -76,7 +78,78 @@ router.get('/nearby', async (req, res) => {
       },
     },
   })
-    .populate('ownerId', 'name email profilePhotoUrl')
+    .populate('ownerId', 'name profilePhotoUrl')
+    .lean()
+  return res.json({ lands })
+})
+
+/**
+ * Distinct land owners with at least one active parcel in radius (any parcel, not only rentals).
+ */
+router.get('/nearby-owners', async (req, res) => {
+  const lat = Number(req.query.lat)
+  const lng = Number(req.query.lng)
+  const maxKm = Math.min(Number(req.query.maxKm) || 50, 200)
+  if (Number.isNaN(lat) || Number.isNaN(lng)) {
+    return sendError(res, 400, 'lat and lng query params required')
+  }
+  const maxMeters = maxKm * 1000
+  const lands = await Land.find({
+    isActive: true,
+    location: {
+      $near: {
+        $geometry: { type: 'Point', coordinates: [lng, lat] },
+        $maxDistance: maxMeters,
+      },
+    },
+  })
+    .select('ownerId availableForRent')
+    .lean()
+
+  const byOwner = new Map()
+  for (const row of lands) {
+    const oid = row.ownerId?.toString()
+    if (!oid) continue
+    if (!byOwner.has(oid)) {
+      byOwner.set(oid, { ownerId: row.ownerId, landCount: 0, rentableCount: 0 })
+    }
+    const ag = byOwner.get(oid)
+    ag.landCount += 1
+    if (row.availableForRent) ag.rentableCount += 1
+  }
+
+  const aggregated = [...byOwner.values()].slice(0, 50)
+  const ids = aggregated.map((a) => a.ownerId)
+  const users = await User.find({ _id: { $in: ids } })
+    .select('name profilePhotoUrl roles landOwnerApproval specialistApproval')
+    .lean()
+  const userMap = new Map(users.map((u) => [u._id.toString(), u]))
+
+  const owners = aggregated
+    .map((a) => {
+      const owner = userMap.get(a.ownerId.toString())
+      if (!owner) return null
+      return {
+        owner,
+        landCountInRadius: a.landCount,
+        rentableLandCountInRadius: a.rentableCount,
+      }
+    })
+    .filter(Boolean)
+
+  return res.json({ owners })
+})
+
+/**
+ * Public catalogue of all active parcels marked for rent (no geo required).
+ * Used by the rentals browser; optional distance filtering happens on the client.
+ * @see GET /lands/nearby for radius-only discovery when the dataset grows.
+ */
+router.get('/for-rent', async (_req, res) => {
+  const lands = await Land.find({ availableForRent: true, isActive: true })
+    .sort({ updatedAt: -1 })
+    .limit(400)
+    .populate('ownerId', 'name profilePhotoUrl')
     .lean()
   return res.json({ lands })
 })
@@ -90,8 +163,14 @@ router.get('/mine', requireAuth, requireRoles('farmer'), async (req, res) => {
 })
 
 router.get('/:id', async (req, res) => {
+  if (!mongoose.isValidObjectId(req.params.id)) {
+    return sendError(res, 404, 'Land not found')
+  }
   const land = await Land.findById(req.params.id)
-    .populate('ownerId', 'name email profilePhotoUrl roles')
+    .populate(
+      'ownerId',
+      'name profilePhotoUrl roles landOwnerApproval specialistApproval'
+    )
     .lean()
   if (!land || !land.isActive) {
     return sendError(res, 404, 'Land not found')

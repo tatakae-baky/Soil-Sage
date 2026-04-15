@@ -1,16 +1,40 @@
-# React + Vite
+# Soil Sage
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Monorepo: **Vite + React** (`/`) and **Express + MongoDB** API (`/server`).
 
-Currently, two official plugins are available:
+## Run locally
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+From the repo root:
 
-## React Compiler
+```bash
+npm install
+npm install --prefix server
+npm run dev
+```
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- Web: [http://localhost:5173](http://localhost:5173) (proxies `/api` to the API)
+- API: [http://localhost:5000](http://localhost:5000) (or `PORT` from `server/.env`)
 
-## Expanding the ESLint configuration
+## Server environment (`server/.env`)
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Copy [`server/.env.example`](server/.env.example) and set at least:
+
+| Variable | Purpose |
+| --- | --- |
+| `MONGODB_URI` | MongoDB connection string |
+| `JWT_SECRET` | Strong secret for signing JWTs |
+| `GEMINI_API_KEY` | Required for **soil/crop diagnosis** (Google Gemini vision + JSON) — create at [Google AI Studio](https://aistudio.google.com/apikey) |
+| `GEMINI_MODEL` | Optional; defaults to **`gemini-2.5-flash`**. If you see **404 model not found**, the id is wrong or retired for your key — open `https://generativelanguage.googleapis.com/v1beta/models?key=YOUR_GEMINI_KEY` in a browser (paste your key) to see valid `name` values, or try `gemini-2.5-flash-lite` / `gemini-flash-latest`. |
+
+Optional: `PORT`, `CORS_ORIGINS`, admin seed vars — see `server/.env.example`.
+
+## Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Web + API together |
+| `npm run dev:web` | Vite only |
+| `npm run dev:api` | API only (`server`) |
+| `npm run seed:admin --prefix server` | Create first admin user (see `server/.env.example`) |
+
+---

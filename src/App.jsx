@@ -1,4 +1,4 @@
-import { Route, Routes, Navigate } from 'react-router-dom'
+import { Route, Routes, Navigate, Outlet } from 'react-router-dom'
 import { AppShell } from './layouts/AppShell'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/HomePage'
@@ -10,6 +10,16 @@ import { RentalsPage } from './pages/RentalsPage'
 import { CommunitiesPage } from './pages/CommunitiesPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { AdminPage } from './pages/AdminPage'
+import { DiagnosePage } from './pages/DiagnosePage'
+import { DiagnosisDetailPage } from './pages/DiagnosisDetailPage'
+import { SettingsPage } from './pages/SettingsPage'
+import { PublicProfilePage } from './pages/PublicProfilePage'
+import { ProvidersPage } from './pages/ProvidersPage'
+import { FollowingFeedPage } from './pages/FollowingFeedPage'
+import { DiscoveryPage } from './pages/DiscoveryPage'
+import { DiscoveryArticlePage } from './pages/DiscoveryArticlePage'
+import { AssistantPage } from './pages/AssistantPage'
+import { NotificationsPage } from './pages/NotificationsPage'
 
 /**
  * Top-level routes: public marketing/auth, protected /app/* feature stubs.
@@ -29,10 +39,43 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
+        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="lands" element={<LandsPage />} />
         <Route path="rentals" element={<RentalsPage />} />
         <Route path="communities" element={<CommunitiesPage />} />
+        <Route path="providers" element={<ProvidersPage />} />
+        <Route path="discovery" element={<DiscoveryPage />} />
+        <Route path="discovery/:articleId" element={<DiscoveryArticlePage />} />
+        <Route
+          path="following"
+          element={
+            <ProtectedRoute roles={['farmer']}>
+              <FollowingFeedPage />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="assistant"
+          element={
+            <ProtectedRoute roles={['farmer']}>
+              <AssistantPage />
+            </ProtectedRoute>
+          }
+        />
         <Route path="inventory" element={<InventoryPage />} />
+        <Route
+          path="diagnose"
+          element={
+            <ProtectedRoute roles={['farmer']}>
+              <Outlet />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<DiagnosePage />} />
+          <Route path=":diagnosisId" element={<DiagnosisDetailPage />} />
+        </Route>
+        <Route path="settings" element={<SettingsPage />} />
+        <Route path="users/:userId" element={<PublicProfilePage />} />
         <Route
           path="admin"
           element={
