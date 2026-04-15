@@ -2,11 +2,58 @@ import { Router } from 'express'
 import { z } from 'zod'
 import { Post } from '../models/Post.js'
 import { Comment } from '../models/Comment.js'
+import { CommunityMember } from '../models/CommunityMember.js'
+import { UserFollow } from '../models/UserFollow.js'
 import { requireAuth, optionalAuth } from '../middleware/auth.js'
 import { requireRoles } from '../middleware/rbac.js'
 import { sendError } from '../utils/errors.js'
 
 const router = Router()
+
+/**
+ * Personalized feed: posts by users you follow **only** in communities you have joined
+ * (avoids leaking posts from private communities the viewer cannot access).
+ */
+router.get('/following-feed', requireAuth, requireRoles('farmer'), async (req, res) => {
+  const limit = Math.min(Number(req.query.limit) || 30, 100)
+  const skip = Math.max(Number(req.query.skip) || 0, 0)
+
+  const followingRows = await UserFollow.find({ followerId: req.user._id })
+    .select('followingId')
+    .lean()
+  const authorIds = followingRows.map((r) => r.followingId)
+  if (authorIds.length === 0) {
+    return res.json({ posts: [], total: 0, limit, skip })
+  }
+
+  const memberRows = await CommunityMember.find({ userId: req.user._id })
+    .select('communityId')
+    .lean()
+  const communityIds = memberRows.map((m) => m.communityId)
+  if (communityIds.length === 0) {
+    return res.json({ posts: [], total: 0, limit, skip })
+  }
+
+  const filter = {
+    communityId: { $in: communityIds },
+    authorId: { $in: authorIds },
+    deletedAt: null,
+    hiddenByAdmin: false,
+  }
+
+  const [posts, total] = await Promise.all([
+    Post.find(filter)
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit)
+      .populate('authorId', 'name profilePhotoUrl')
+      .populate('communityId', 'name')
+      .lean(),
+    Post.countDocuments(filter),
+  ])
+
+  return res.json({ posts, total, limit, skip })
+})
 
 router.get('/:postId', optionalAuth, async (req, res) => {
   const isAdmin = req.user?.roles?.includes('admin')
