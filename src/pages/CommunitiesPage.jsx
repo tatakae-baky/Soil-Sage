@@ -45,13 +45,14 @@ export function CommunitiesPage() {
   return (
     <div className="space-y-8">
       <div className="flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-[22px] font-semibold tracking-[-0.44px] text-[#222222]">
-          Communities
-        </h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight text-text-primary">Communities</h1>
+          <p className="mt-1 text-sm text-text-secondary">Join groups, post updates, and discuss with other farmers.</p>
+        </div>
         {!showCreate && (
           <button
             onClick={() => setShowCreate(true)}
-            className="rounded-[8px] bg-[#222222] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#ff385c]"
+            className="rounded-lg bg-text-primary px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand"
           >
             + Create community
           </button>
@@ -64,9 +65,9 @@ export function CommunitiesPage() {
             e.preventDefault()
             createMut.mutate({ name: cName, description: cDesc })
           }}
-          className="rounded-[20px] border border-[#ebebeb] bg-white p-6 shadow-card"
+          className="rounded-2xl border border-border-light bg-surface p-6 shadow-card"
         >
-          <h2 className="text-[16px] font-semibold text-[#222222]">
+          <h2 className="text-lg font-semibold text-text-primary">
             New community
           </h2>
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
@@ -74,7 +75,7 @@ export function CommunitiesPage() {
             <Field label="Description" value={cDesc} onChange={setCDesc} />
           </div>
           {createMut.error && (
-            <p className="mt-3 text-[14px] text-[#c13515]">{createMut.error.message}</p>
+            <p className="mt-3 text-sm text-error">{createMut.error.message}</p>
           )}
           <div className="mt-5 flex gap-3">
             <Btn type="submit" loading={createMut.isPending}>Create</Btn>
@@ -83,27 +84,43 @@ export function CommunitiesPage() {
         </form>
       )}
 
-      {listQ.isLoading && <p className="text-[14px] text-[#6a6a6a]">Loading…</p>}
+      {listQ.isLoading && <p className="text-sm text-text-secondary">Loading…</p>}
 
       {/* ── Community cards ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
         {(listQ.data?.communities || []).map((c) => (
-          <div key={c._id} className="rounded-[20px] border border-[#ebebeb] bg-white p-5 shadow-card">
-            <h3 className="text-[16px] font-semibold text-[#222222]">{c.name}</h3>
+          <div
+            key={c._id}
+            className="flex flex-col rounded-2xl border border-border-light bg-surface p-5 shadow-card transition hover:border-zinc-300 hover:shadow-hover"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <h3 className="text-base font-semibold text-text-primary">{c.name}</h3>
+              <div className="flex shrink-0 flex-col items-end gap-1">
+                <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-text-secondary">
+                  Forum
+                </span>
+                {/* Shown when list API enriches communities with counts (optional). */}
+                {typeof c.memberCount === 'number' && (
+                  <span className="rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold text-brand">
+                    {c.memberCount} members
+                  </span>
+                )}
+              </div>
+            </div>
             {c.description && (
-              <p className="mt-1 text-[13px] text-[#6a6a6a]">{c.description}</p>
+              <p className="mt-2 line-clamp-3 text-sm leading-relaxed text-text-secondary">{c.description}</p>
             )}
-            <div className="mt-3 flex gap-2">
+            <div className="mt-4 flex flex-wrap gap-2">
               <button
                 onClick={() => setActiveCommunity(c)}
-                className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#ff385c]"
+                className="rounded-lg bg-text-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand"
               >
                 Open
               </button>
               <button
                 onClick={() => joinMut.mutate(c._id)}
                 disabled={joinMut.isPending}
-                className="rounded-[8px] border border-[#dddddd] px-4 py-2 text-[13px] font-medium text-[#222222] transition hover:bg-[#f2f2f2] disabled:opacity-50"
+                className="rounded-lg border border-border px-4 py-2 text-xs font-semibold text-text-primary transition hover:bg-surface-secondary disabled:opacity-50"
               >
                 Join
               </button>
@@ -143,16 +160,16 @@ function CommunityDetail({ community, userId, onBack }) {
   })
 
   return (
-    <section className="rounded-[20px] border border-[#ebebeb] bg-white p-6 shadow-card">
-      <div className="flex items-center justify-between">
-        <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
-          {community.name}
-        </h2>
+    <section className="rounded-2xl border border-border-light bg-surface p-6 shadow-card">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="text-xl font-semibold text-text-primary">{community.name}</h2>
+          {community.description && (
+            <p className="mt-1 text-sm text-text-secondary">{community.description}</p>
+          )}
+        </div>
         <BtnSecondary onClick={onBack}>Back</BtnSecondary>
       </div>
-      {community.description && (
-        <p className="mt-1 text-[14px] text-[#6a6a6a]">{community.description}</p>
-      )}
 
       {/* ── New post ── */}
       <form
@@ -168,10 +185,10 @@ function CommunityDetail({ community, userId, onBack }) {
           value={body}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Write a post…"
-          className="w-full rounded-[8px] border border-[#dddddd] px-3 py-2.5 text-[14px] text-[#222222] outline-none transition focus:border-[#222222] focus:ring-2 focus:ring-[#222222]"
+          className="w-full rounded-xl border border-border px-3 py-2.5 text-sm text-text-primary outline-none transition focus:ring-2 focus:ring-brand/30"
         />
         {postMut.error && (
-          <p className="mt-1 text-[14px] text-[#c13515]">{postMut.error.message}</p>
+          <p className="mt-1 text-sm text-error">{postMut.error.message}</p>
         )}
         <Btn type="submit" loading={postMut.isPending} className="mt-2">
           Post
@@ -179,7 +196,7 @@ function CommunityDetail({ community, userId, onBack }) {
       </form>
 
       {/* ── Posts ── */}
-      {postsQ.isLoading && <p className="mt-4 text-[14px] text-[#6a6a6a]">Loading posts…</p>}
+      {postsQ.isLoading && <p className="mt-4 text-sm text-text-secondary">Loading posts…</p>}
       <div className="mt-4 space-y-4">
         {(postsQ.data?.posts || []).map((post) => (
           <PostCard
@@ -237,52 +254,52 @@ function PostCard({ post, userId, communityId }) {
   const isAuthor = post.authorId?._id === userId || post.authorId === userId
 
   return (
-    <div className="rounded-[14px] border border-[#ebebeb] bg-[#f7f7f7] p-4">
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[14px] font-medium text-[#222222]">
-            {post.authorId?.name || 'User'}
-          </p>
-          <p className="mt-1 text-[14px] leading-[1.43] text-[#222222]">
-            {post.body}
-          </p>
+    <div className="rounded-xl border border-border-light bg-surface-page/60 p-4 shadow-sm">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-text-primary">{post.authorId?.name || 'User'}</p>
+          <p className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-text-primary">{post.body}</p>
         </div>
         {isAuthor && (
           <button
-            onClick={() => { if (confirm('Delete this post?')) deleteMut.mutate() }}
-            className="text-[13px] text-[#c13515] hover:underline"
+            onClick={() => {
+              if (confirm('Delete this post?')) deleteMut.mutate()
+            }}
+            className="shrink-0 text-xs font-medium text-error hover:underline"
           >
             Delete
           </button>
         )}
       </div>
 
-      {post.editedAt && (
-        <p className="mt-1 text-[12px] text-[#6a6a6a]">(edited)</p>
-      )}
+      {post.editedAt && <p className="mt-1 text-xs text-text-secondary">(edited)</p>}
 
-      <div className="mt-3 flex flex-wrap gap-3 text-[13px]">
+      <div className="mt-4 flex flex-wrap gap-2 border-t border-border-light pt-3">
         <button
+          type="button"
           onClick={() => likeMut.mutate()}
-          className="font-medium text-[#222222] hover:text-[#ff385c]"
+          className="rounded-full bg-red-50 px-3 py-1.5 text-xs font-semibold text-brand transition hover:bg-red-100"
         >
           ♥ {post.likeCount || 0}
         </button>
         <button
+          type="button"
           onClick={() => unlikeMut.mutate()}
-          className="text-[#6a6a6a] hover:text-[#222222]"
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary"
         >
           Unlike
         </button>
         <button
+          type="button"
           onClick={() => saveMut.mutate()}
-          className="text-[#6a6a6a] hover:text-[#222222]"
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary"
         >
           Save
         </button>
         <button
+          type="button"
           onClick={() => setShowComments((p) => !p)}
-          className="text-[#6a6a6a] hover:text-[#222222]"
+          className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs font-medium text-text-secondary transition hover:bg-surface-secondary"
         >
           Comments ({post.commentCount || 0})
         </button>
@@ -290,17 +307,13 @@ function PostCard({ post, userId, communityId }) {
 
       {/* ── Comments ── */}
       {showComments && (
-        <div className="mt-3 space-y-2 border-t border-[#ebebeb] pt-3">
-          {commentsQ.isLoading && <p className="text-[13px] text-[#6a6a6a]">Loading…</p>}
+        <div className="mt-4 space-y-2 border-t border-border-light pt-3">
+          {commentsQ.isLoading && <p className="text-xs text-text-secondary">Loading…</p>}
           {(commentsQ.data?.comments || []).map((c) => (
-            <div key={c._id} className="rounded-[8px] bg-white px-3 py-2">
-              <p className="text-[13px] font-medium text-[#222222]">
-                {c.authorId?.name || 'User'}
-              </p>
-              <p className="text-[13px] text-[#222222]">{c.body}</p>
-              {c.parentCommentId && (
-                <p className="text-[12px] text-[#6a6a6a]">↳ reply</p>
-              )}
+            <div key={c._id} className="rounded-lg border border-border-light bg-surface px-3 py-2">
+              <p className="text-xs font-semibold text-text-primary">{c.authorId?.name || 'User'}</p>
+              <p className="mt-0.5 text-sm text-text-primary">{c.body}</p>
+              {c.parentCommentId && <p className="mt-1 text-[11px] text-text-secondary">↳ reply</p>}
             </div>
           ))}
           <form
@@ -315,19 +328,17 @@ function PostCard({ post, userId, communityId }) {
               value={commentBody}
               onChange={(e) => setCommentBody(e.target.value)}
               placeholder="Write a comment…"
-              className="flex-1 rounded-[8px] border border-[#dddddd] px-3 py-2 text-[13px] text-[#222222] outline-none transition focus:border-[#222222]"
+              className="flex-1 rounded-lg border border-border px-3 py-2 text-sm text-text-primary outline-none focus:ring-2 focus:ring-brand/30"
             />
             <button
               type="submit"
               disabled={commentMut.isPending}
-              className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#ff385c] disabled:opacity-50"
+              className="rounded-lg bg-text-primary px-4 py-2 text-xs font-semibold text-white transition hover:bg-brand disabled:opacity-50"
             >
               Reply
             </button>
           </form>
-          {commentMut.error && (
-            <p className="text-[13px] text-[#c13515]">{commentMut.error.message}</p>
-          )}
+          {commentMut.error && <p className="text-xs text-error">{commentMut.error.message}</p>}
         </div>
       )}
     </div>
@@ -336,10 +347,11 @@ function PostCard({ post, userId, communityId }) {
 
 /* ── Tiny shared components ── */
 function Field({ label, onChange, multiline, ...props }) {
-  const cls = 'w-full rounded-[8px] border border-[#dddddd] px-3 py-2.5 text-[14px] text-[#222222] outline-none transition focus:border-[#222222] focus:ring-2 focus:ring-[#222222]'
+  const cls =
+    'w-full rounded-lg border border-border px-3 py-2.5 text-sm text-text-primary outline-none transition focus:ring-2 focus:ring-brand/30'
   return (
     <div>
-      {label && <label className="mb-1 block text-[14px] font-medium text-[#222222]">{label}</label>}
+      {label && <label className="mb-1 block text-sm font-medium text-text-primary">{label}</label>}
       {multiline ? (
         <textarea rows={3} {...props} onChange={(e) => onChange(e.target.value)} className={cls} />
       ) : (
@@ -353,7 +365,7 @@ function Btn({ children, loading, className = '', ...props }) {
   return (
     <button
       disabled={loading}
-      className={`rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50 ${className}`}
+      className={`rounded-lg bg-brand px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-dark disabled:opacity-50 ${className}`}
       {...props}
     >
       {loading ? 'Wait…' : children}
@@ -364,7 +376,7 @@ function Btn({ children, loading, className = '', ...props }) {
 function BtnSecondary({ children, ...props }) {
   return (
     <button
-      className="rounded-[8px] border border-[#dddddd] px-5 py-2.5 text-[14px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]"
+      className="rounded-lg border border-border px-5 py-2.5 text-sm font-medium text-text-primary transition hover:bg-surface-secondary"
       {...props}
     >
       {children}

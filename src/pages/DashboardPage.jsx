@@ -1,151 +1,289 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query'
+import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
+import { useHasRole } from '../hooks/useHasRole'
 import {
   landsApi,
   inventoryApi,
   notificationsApi,
   communitiesApi,
+  diagnosesApi,
 } from '../lib/api'
 
+/** Morning / afternoon / evening copy for the hero greeting. */
+function greetingForHour(hour) {
+  if (hour < 12) return 'Good morning'
+  if (hour < 17) return 'Good afternoon'
+  return 'Good evening'
+}
+
 /**
- * Authenticated dashboard — overview cards with live stats from the API.
+ * Authenticated dashboard — hero greeting, Nexus-style overview metric cards,
+ * recent diagnoses (farmers), quick actions. Notifications live on `/app/notifications`.
  */
 export function DashboardPage() {
   const { user } = useAuth()
-  const qc = useQueryClient()
+  const isFarmer = useHasRole('farmer')
 
   const landsQ = useQuery({ queryKey: ['lands', 'mine'], queryFn: () => landsApi.mine() })
   const invQ = useQuery({ queryKey: ['inventory', 'items'], queryFn: () => inventoryApi.items() })
-  const notifQ = useQuery({ queryKey: ['notifications'], queryFn: () => notificationsApi.list() })
+  const notifQ = useQuery({
+    queryKey: ['notifications'],
+    queryFn: () => notificationsApi.list(),
+    staleTime: 8_000,
+    refetchInterval: 12_000,
+    refetchIntervalInBackground: false,
+  })
   const commQ = useQuery({ queryKey: ['communities'], queryFn: () => communitiesApi.list() })
+  const diagQ = useQuery({
+    queryKey: ['diagnoses', 'recent'],
+    queryFn: () => diagnosesApi.mine({ limit: 5 }),
+    enabled: isFarmer,
+  })
 
-  const landCount = landsQ.data?.lands?.length ?? '—'
-  const itemCount = invQ.data?.items?.length ?? '—'
+  const landsN = landsQ.data?.lands?.length
+  const invN = invQ.data?.items?.length
+  const commN = commQ.data?.communities?.length
+  const diagTotal = diagQ.data?.total
   const unreadCount = (notifQ.data?.notifications || []).filter((n) => !n.read).length
-  const communityCount = commQ.data?.communities?.length ?? '—'
+
+  const landCount = landsQ.isLoading ? '—' : landsN ?? 0
+  const itemCount = invQ.isLoading ? '—' : invN ?? 0
+  const communityCount = commQ.isLoading ? '—' : commN ?? 0
+  const diagnosisCount = diagQ.isLoading ? '—' : diagTotal ?? 0
+
+  const landsHint =
+    landsQ.isLoading ? 'Loading…' : landsN === 0 ? 'Register your first plot' : `${landsN} plot${landsN === 1 ? '' : 's'} on file`
+  const invHint =
+    invQ.isLoading ? 'Loading…' : invN === 0 ? 'Add seeds, tools, or inputs' : `${invN} line item${invN === 1 ? '' : 's'} tracked`
+  const notifHint =
+    notifQ.isLoading ? 'Loading…' : unreadCount === 0 ? "You're all caught up" : `${unreadCount} unread message${unreadCount === 1 ? '' : 's'}`
+  const commHint =
+    commQ.isLoading ? 'Loading…' : commN === 0 ? 'Discover groups to join' : `${commN} communit${commN === 1 ? 'y' : 'ies'} joined`
+  const diagHint =
+    !isFarmer
+      ? ''
+      : diagQ.isLoading
+        ? 'Loading…'
+        : (diagTotal ?? 0) === 0
+          ? 'Upload a photo to get AI insight'
+          : `${diagTotal} report${diagTotal === 1 ? '' : 's'} total`
+
+  const hour = new Date().getHours()
+  const greeting = greetingForHour(hour)
 
   const approvalBadge = (status) => {
     const map = {
       approved: 'bg-green-50 text-green-700',
       pending: 'bg-amber-50 text-amber-700',
-      rejected: 'bg-red-50 text-[#c13515]',
-      not_applicable: 'bg-[#f2f2f2] text-[#6a6a6a]',
+      rejected: 'bg-red-50 text-error',
+      not_applicable: 'bg-zinc-100 text-text-secondary',
     }
-    return `inline-block rounded-[14px] px-2.5 py-0.5 text-[12px] font-semibold ${map[status] || map.not_applicable}`
+    return `inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold ${map[status] || map.not_applicable}`
   }
 
-  async function markAllRead() {
-    await notificationsApi.readAll()
-    qc.invalidateQueries({ queryKey: ['notifications'] })
-  }
-
-  const cards = [
-    { label: 'My lands', value: landCount, to: '/app/lands' },
-    { label: 'Inventory items', value: itemCount, to: '/app/inventory' },
-    { label: 'Unread notifications', value: unreadCount, to: '#' },
-    { label: 'Communities', value: communityCount, to: '/app/communities' },
+  /** Overview metrics — neutral “Nexus”-style tiles (no heavy left stripe). */
+  const statCards = [
+    {
+      label: 'My lands',
+      value: landCount,
+      hint: landsHint,
+      to: '/app/lands',
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.864 0 4.5 4.5 0 00-8.268 0A3.75 3.75 0 002.25 15z" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Inventory items',
+      value: itemCount,
+      hint: invHint,
+      to: '/app/inventory',
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Unread notifications',
+      value: unreadCount,
+      hint: notifHint,
+      to: '/app/notifications',
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.113V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3.75 3.75 0 11-5.714 0" />
+        </svg>
+      ),
+    },
+    {
+      label: 'Communities',
+      value: communityCount,
+      hint: commHint,
+      to: '/app/communities',
+      icon: (
+        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.09 9.09 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m0 0 .001-.193M12 12.75c-2.486 0-4.5-2.014-4.5-4.5S9.514 3.75 12 3.75s4.5 2.014 4.5 4.5-2.014 4.5-4.5 4.5z" />
+        </svg>
+      ),
+    },
+    ...(isFarmer
+      ? [
+          {
+            label: 'AI diagnoses (total)',
+            value: diagnosisCount,
+            hint: diagHint,
+            to: '/app/diagnose',
+            icon: (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
+              </svg>
+            ),
+          },
+        ]
+      : []),
   ]
 
   return (
     <div className="space-y-10">
-      {/* ── Welcome ── */}
-      <div className="rounded-[20px] border border-[#ebebeb] bg-white p-6 shadow-card">
-        <h1 className="text-[22px] font-semibold tracking-[-0.44px] text-[#222222]">
-          Welcome, {user?.name}
-        </h1>
-        <p className="mt-1 text-[14px] text-[#6a6a6a]">{user?.email}</p>
-
-        <div className="mt-4 flex flex-wrap gap-3">
-          <span className={approvalBadge('approved')}>
-            Roles: {(user?.roles || []).join(', ')}
-          </span>
-          {user?.roles?.includes('land_owner') && (
-            <span className={approvalBadge(user.landOwnerApproval)}>
-              Land owner: {user.landOwnerApproval}
+      {/* ── Hero greeting + account context ── */}
+      <div className="overflow-hidden rounded-2xl border border-border-light bg-linear-to-br from-white via-white to-zinc-50 shadow-card">
+        <div className="border-b border-border-light bg-white/80 px-6 py-5 backdrop-blur-sm">
+          <p className="text-sm font-medium text-text-secondary">{greeting},</p>
+          <h1 className="mt-1 text-2xl font-semibold tracking-tight text-text-primary md:text-[26px]">
+            {user?.name}
+          </h1>
+          <p className="mt-1 text-sm text-text-secondary">{user?.email}</p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className={approvalBadge('approved')}>
+              Roles: {(user?.roles || []).join(', ') || '—'}
             </span>
-          )}
-          {user?.roles?.includes('specialist') && (
-            <span className={approvalBadge(user.specialistApproval)}>
-              Specialist: {user.specialistApproval}
-            </span>
-          )}
+            {user?.roles?.includes('land_owner') && (
+              <span className={approvalBadge(user.landOwnerApproval)}>
+                Land owner: {user.landOwnerApproval}
+              </span>
+            )}
+            {user?.roles?.includes('specialist') && (
+              <span className={approvalBadge(user.specialistApproval)}>
+                Specialist: {user.specialistApproval}
+              </span>
+            )}
+          </div>
         </div>
+        <p className="px-6 py-3 text-xs text-text-secondary">
+          Here&apos;s a snapshot of your farm workspace. Use the sidebar to jump anywhere, or open a quick action below.
+        </p>
       </div>
 
-      {/* ── Stats grid ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {cards.map((c) => (
-          <Link
-            key={c.label}
-            to={c.to}
-            className="rounded-[20px] border border-[#ebebeb] bg-white p-5 shadow-card transition hover:shadow-hover"
-          >
-            <p className="text-[14px] font-medium text-[#6a6a6a]">{c.label}</p>
-            <p className="mt-2 text-[28px] font-bold leading-[1.43] text-[#222222]">
-              {c.value}
-            </p>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Notifications ── */}
+      {/* ── Overview metrics (Nexus-style: white tile, hairline border, soft lift) ── */}
       <section>
-        <div className="flex items-center justify-between">
-          <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
-            Recent notifications
-          </h2>
-          {unreadCount > 0 && (
-            <button
-              type="button"
-              onClick={markAllRead}
-              className="rounded-[8px] border border-[#dddddd] px-3 py-1.5 text-[13px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]"
+        <p className="mb-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-zinc-500">
+          Overview
+        </p>
+        <div
+          className={`grid min-w-0 gap-5 sm:grid-cols-2 ${isFarmer ? 'lg:grid-cols-3 xl:grid-cols-5' : 'lg:grid-cols-2 xl:grid-cols-4'}`}
+        >
+          {statCards.map((c) => (
+            <Link
+              key={c.label}
+              to={c.to}
+              className="group flex min-w-0 flex-col rounded-[10px] border border-zinc-200/90 bg-white p-5 shadow-[0_1px_2px_rgba(15,23,42,0.04)] transition duration-200 hover:border-zinc-300 hover:shadow-[0_4px_14px_rgba(15,23,42,0.07)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             >
-              Mark all read
-            </button>
-          )}
-        </div>
-        {notifQ.isLoading && (
-          <p className="mt-2 text-[14px] text-[#6a6a6a]">Loading…</p>
-        )}
-        <div className="mt-3 space-y-2">
-          {(notifQ.data?.notifications || []).slice(0, 10).map((n) => (
-            <div
-              key={n._id}
-              className={`rounded-[14px] border border-[#ebebeb] px-4 py-3 ${
-                n.read ? 'bg-white' : 'bg-[#f7f7f7]'
-              }`}
-            >
-              <p className="text-[14px] font-medium text-[#222222]">{n.title}</p>
-              {n.body && (
-                <p className="text-[13px] text-[#6a6a6a]">{n.body}</p>
-              )}
-            </div>
+              <div className="flex items-start justify-between gap-2">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-zinc-100/90 text-zinc-600 transition group-hover:bg-zinc-100 group-hover:text-zinc-800">
+                  {c.icon}
+                </span>
+                {c.label === 'Unread notifications' && unreadCount > 0 && (
+                  <span className="shrink-0 rounded-full bg-amber-50 px-2 py-0.5 text-[11px] font-semibold text-amber-800 ring-1 ring-amber-100">
+                    {unreadCount > 99 ? '99+' : unreadCount} new
+                  </span>
+                )}
+              </div>
+              <p className="mt-5 text-[13px] font-medium leading-none text-zinc-500">{c.label}</p>
+              <p className="mt-2.5 text-[32px] font-bold leading-none tracking-tight text-zinc-900 tabular-nums">
+                {c.value}
+              </p>
+              <p className="mt-3 text-xs leading-snug text-zinc-400">{c.hint}</p>
+            </Link>
           ))}
-          {(notifQ.data?.notifications || []).length === 0 && !notifQ.isLoading && (
-            <p className="text-[14px] text-[#6a6a6a]">No notifications yet.</p>
-          )}
         </div>
       </section>
 
-      {/* ── Quick links ── */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {[
-          { label: 'Add land', to: '/app/lands', desc: 'Register land with GPS and soil details' },
-          { label: 'Browse rentals', to: '/app/rentals', desc: 'Send or manage rental requests' },
-          { label: 'Join a community', to: '/app/communities', desc: 'Post questions and discuss with peers' },
-          { label: 'Manage inventory', to: '/app/inventory', desc: 'Track seeds, tools, and fertilizers' },
-        ].map((l) => (
-          <Link
-            key={l.label}
-            to={l.to}
-            className="rounded-[20px] border border-[#ebebeb] bg-white p-5 shadow-card transition hover:shadow-hover"
-          >
-            <p className="text-[16px] font-semibold text-[#222222]">{l.label}</p>
-            <p className="mt-1 text-[13px] text-[#6a6a6a]">{l.desc}</p>
-          </Link>
-        ))}
-      </div>
+      {/* ── Recent diagnoses (farmers) ── */}
+      {isFarmer && (
+        <section>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <h2 className="text-lg font-semibold tracking-tight text-text-primary">Recent diagnoses</h2>
+            <Link to="/app/diagnose" className="text-sm font-semibold text-brand hover:underline">
+              New diagnosis
+            </Link>
+          </div>
+          {diagQ.isLoading && <p className="mt-2 text-sm text-text-secondary">Loading…</p>}
+          <div className="mt-3 space-y-2">
+            {(diagQ.data?.diagnoses || []).map((d) => (
+              <Link
+                key={d._id}
+                to={`/app/diagnose/${d._id}`}
+                className="block rounded-xl border border-border-light bg-surface px-4 py-3 shadow-card transition hover:border-zinc-300 hover:shadow-hover"
+              >
+                <div className="flex items-start justify-between gap-2">
+                  <p className="min-w-0 flex-1 text-sm font-medium text-text-primary">
+                    {d.result?.summary?.slice(0, 120)}
+                    {(d.result?.summary?.length || 0) > 120 ? '…' : ''}
+                  </p>
+                  <span className="shrink-0 text-xs font-semibold text-brand" aria-hidden>
+                    View →
+                  </span>
+                </div>
+                <p className="mt-1 text-xs text-text-secondary">
+                  {d.createdAt && new Date(d.createdAt).toLocaleString()}
+                </p>
+              </Link>
+            ))}
+            {(diagQ.data?.diagnoses || []).length === 0 && !diagQ.isLoading && (
+              <p className="text-sm text-text-secondary">
+                No diagnoses yet.{' '}
+                <Link to="/app/diagnose" className="font-semibold text-brand hover:underline">
+                  Run your first
+                </Link>
+                .
+              </p>
+            )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Quick actions ── */}
+      <section>
+        <h2 className="mb-4 text-lg font-semibold tracking-tight text-text-primary">Quick actions</h2>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: 'Add land', to: '/app/lands', desc: 'Register land with GPS and soil details' },
+            { label: 'Browse rentals', to: '/app/rentals', desc: 'Send or manage rental requests' },
+            { label: 'Join a community', to: '/app/communities', desc: 'Post questions and discuss with peers' },
+            { label: 'Manage inventory', to: '/app/inventory', desc: 'Track seeds, tools, and fertilizers' },
+            ...(isFarmer
+              ? [
+                  {
+                    label: 'Soil / crop diagnosis',
+                    to: '/app/diagnose',
+                    desc: 'Upload photos for AI-guided recommendations',
+                  },
+                ]
+              : []),
+          ].map((l) => (
+            <Link
+              key={l.label}
+              to={l.to}
+              className="rounded-xl border border-border-light bg-surface p-5 shadow-card transition hover:shadow-hover"
+            >
+              <p className="text-base font-semibold text-text-primary">{l.label}</p>
+              <p className="mt-1 text-xs leading-relaxed text-text-secondary">{l.desc}</p>
+            </Link>
+          ))}
+        </div>
+      </section>
     </div>
   )
 }

@@ -1,5 +1,6 @@
 import { useState, useMemo } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { landsApi } from '../lib/api'
 import { useHasRole } from '../hooks/useHasRole'
 import { LandMapPicker } from '../components/LandMapPicker'
@@ -17,7 +18,7 @@ const EMPTY = {
 }
 
 /**
- * Land management — Google Map pin for exact location; rich nearby rental cards.
+ * Land management — Leaflet + OpenStreetMap pin; nearby rental listings and owners in radius.
  */
 export function LandsPage() {
   const qc = useQueryClient()
@@ -42,6 +43,23 @@ export function LandsPage() {
     enabled: Boolean(nearbySearch),
   })
 
+  const nearbyOwnersQ = useQuery({
+    queryKey: [
+      'lands',
+      'nearbyOwners',
+      nearbySearch?.lat,
+      nearbySearch?.lng,
+      nearbySearch?.maxKm,
+    ],
+    queryFn: () =>
+      landsApi.nearbyOwners({
+        lat: nearbySearch.lat,
+        lng: nearbySearch.lng,
+        maxKm: nearbySearch.maxKm,
+      }),
+    enabled: Boolean(nearbySearch),
+  })
+
   const myLandsQ = useQuery({
     queryKey: ['lands', 'mine'],
     queryFn: () => landsApi.mine(),
@@ -49,10 +67,30 @@ export function LandsPage() {
 
   const createMut = useMutation({
     mutationFn: (data) => landsApi.create(data),
-    onSuccess: () => {
+    /**
+     * API returns the new document so we can show Land ID immediately; renters need this on Rentals.
+     */
+    onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['lands'] })
-      setShowForm(false)
-      setForm({ ...EMPTY })
+      const land = res?.land
+      if (land?._id) {
+        setEditingId(land._id)
+        setForm({
+          title: land.title || '',
+          description: land.description || '',
+          size: land.size || '',
+          soilCondition: land.soilCondition || '',
+          cropType: land.cropType || '',
+          lat: land.location?.coordinates?.[1]?.toString() || '',
+          lng: land.location?.coordinates?.[0]?.toString() || '',
+          availableForRent: land.availableForRent || false,
+        })
+        setShowForm(true)
+      } else {
+        setShowForm(false)
+        setEditingId(null)
+        setForm({ ...EMPTY })
+      }
       setError('')
     },
     onError: (e) => setError(e.message),
@@ -184,6 +222,32 @@ export function LandsPage() {
           <h2 className="text-[16px] font-semibold text-[#222222]">
             {editingId ? 'Edit land' : 'Register new land'}
           </h2>
+          {!editingId && (
+            <p className="mt-2 text-[13px] text-[#6a6a6a]">
+              A Land ID is created when you save. Copy it from here or from your land card to paste on
+              the Rentals page when requesting or sharing a plot.
+            </p>
+          )}
+          {editingId && (
+            <div className="mt-4 rounded-[8px] border border-[#ebebeb] bg-[#fafafa] px-4 py-3">
+              <p className="text-[14px] font-medium text-[#222222]">Land ID</p>
+              <p className="mt-1 text-[12px] text-[#6a6a6a]">
+                Use this value in <strong className="font-medium text-[#222222]">Rentals → Request land rental</strong>.
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-2">
+                <code className="max-w-full break-all rounded bg-white px-2 py-1.5 text-[12px] text-[#222222]">
+                  {editingId}
+                </code>
+                <button
+                  type="button"
+                  onClick={() => copyText(editingId)}
+                  className="rounded-[8px] border border-[#dddddd] bg-white px-3 py-1.5 text-[12px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]"
+                >
+                  Copy ID
+                </button>
+              </div>
+            </div>
+          )}
           <div className="mt-4 grid gap-4 sm:grid-cols-2">
             <Input label="Title" value={form.title} onChange={(v) => set('title', v)} />
             <Input label="Size (e.g. 5 acres, 2 hectares)" value={form.size} onChange={(v) => set('size', v)} />
@@ -273,6 +337,21 @@ export function LandsPage() {
               >
                 {land.availableForRent ? 'For rent' : 'Not listed'}
               </span>
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[#ebebeb] pt-3">
+                <span className="text-[12px] text-[#6a6a6a]">
+                  Land ID:{' '}
+                  <code className="rounded bg-[#fafafa] px-1.5 py-0.5 text-[11px] text-[#222222]">
+                    {land._id}
+                  </code>
+                </span>
+                <button
+                  type="button"
+                  onClick={() => copyText(land._id)}
+                  className="rounded-[8px] border border-[#dddddd] px-3 py-1 text-[12px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]"
+                >
+                  Copy
+                </button>
+              </div>
               <div className="mt-3 flex gap-2">
                 <button
                   type="button"
@@ -307,7 +386,9 @@ export function LandsPage() {
         </p>
 
         <div className="mt-4">
-          <p className="mb-2 text-[14px] font-medium text-[#222222]">Reference location</p>
+          <p className="mb-2 text-[14px] font-medium text-[#222222]">
+            Reference location (OpenStreetMap + Leaflet)
+          </p>
           <LandMapPicker
             lat={nearbyDraft.lat}
             lng={nearbyDraft.lng}
@@ -402,12 +483,15 @@ export function LandsPage() {
                   <div>
                     <dt className="inline font-medium text-[#222222]">Owner: </dt>
                     <dd className="inline">
-                      {land.ownerId?.name || '—'}
-                      {land.ownerId?.email && (
-                        <span className="text-[#6a6a6a]">
-                          {' '}
-                          · {land.ownerId.email}
-                        </span>
+                      {land.ownerId?._id ? (
+                        <Link
+                          to={`/app/users/${land.ownerId._id}`}
+                          className="font-medium text-[#ff385c] underline hover:text-[#e00b41]"
+                        >
+                          {land.ownerId?.name || 'View profile'}
+                        </Link>
+                      ) : (
+                        (land.ownerId?.name || '—')
                       )}
                     </dd>
                   </div>
@@ -449,6 +533,53 @@ export function LandsPage() {
             )
           })}
         </div>
+
+        {nearbySearch && (
+          <div className="mt-10 border-t border-[#ebebeb] pt-8">
+            <h3 className="text-[18px] font-semibold text-[#222222]">
+              Farmers / owners with land in this radius
+            </h3>
+            <p className="mt-1 text-[14px] text-[#6a6a6a]">
+              Includes parcels not listed for rent. Open a profile to see which plots are
+              available for rental.
+            </p>
+            {nearbyOwnersQ.isLoading && (
+              <p className="mt-3 text-[14px] text-[#6a6a6a]">Loading owners…</p>
+            )}
+            {nearbyOwnersQ.error && (
+              <ErrorBox msg={nearbyOwnersQ.error.message} />
+            )}
+            <ul className="mt-4 space-y-3">
+              {(nearbyOwnersQ.data?.owners || []).map((row) => (
+                <li
+                  key={row.owner._id}
+                  className="flex flex-wrap items-center justify-between gap-3 rounded-[14px] border border-[#ebebeb] bg-[#fafafa] px-4 py-3"
+                >
+                  <Link
+                    to={`/app/users/${row.owner._id}`}
+                    className="text-[15px] font-semibold text-[#ff385c] underline"
+                  >
+                    {row.owner.name}
+                  </Link>
+                  <span className="text-[13px] text-[#6a6a6a]">
+                    {row.landCountInRadius} parcel(s) here
+                    {row.rentableLandCountInRadius > 0
+                      ? ` · ${row.rentableLandCountInRadius} listed for rent`
+                      : ''}
+                  </span>
+                </li>
+              ))}
+            </ul>
+            {nearbySearch &&
+              !nearbyOwnersQ.isLoading &&
+              (nearbyOwnersQ.data?.owners || []).length === 0 &&
+              !nearbyOwnersQ.error && (
+                <p className="mt-3 text-[14px] text-[#6a6a6a]">
+                  No land parcels found in this radius (try a wider search).
+                </p>
+              )}
+          </div>
+        )}
       </section>
     </div>
   )
