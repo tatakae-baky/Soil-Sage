@@ -3,6 +3,8 @@ import mongoose from 'mongoose'
 import { z } from 'zod'
 import { User } from '../models/User.js'
 import { Post } from '../models/Post.js'
+import { Diagnosis } from '../models/Diagnosis.js'
+import { Land } from '../models/Land.js'
 import {
   SolutionProvider,
   PROVIDER_CATEGORY_VALUES,
@@ -25,6 +27,49 @@ const approveSchema = z.object({
   userId: z.string(),
   landOwner: z.enum(['pending', 'approved', 'rejected', 'not_applicable']).optional(),
   specialist: z.enum(['pending', 'approved', 'rejected', 'not_applicable']).optional(),
+})
+
+/** Platform-wide stats (counts) */
+router.get('/stats', async (_req, res) => {
+  const [totalUsers, totalDiagnoses, totalLands, totalPosts, totalSpecialists] =
+    await Promise.all([
+      User.countDocuments(),
+      Diagnosis.countDocuments(),
+      Land.countDocuments(),
+      Post.countDocuments(),
+      User.countDocuments({ specialistApproval: 'approved' }),
+    ])
+  return res.json({ totalUsers, totalDiagnoses, totalLands, totalPosts, totalSpecialists })
+})
+
+/** Search & browse all users */
+router.get('/users', async (req, res) => {
+  const { q = '', role = '', page = '1', limit = '20' } = req.query
+  const pageNum = Math.max(1, parseInt(page, 10) || 1)
+  const limitNum = Math.min(100, Math.max(1, parseInt(limit, 10) || 20))
+
+  const filter = {}
+  if (q.trim()) {
+    const escaped = q.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+    filter.$or = [
+      { name: { $regex: escaped, $options: 'i' } },
+      { email: { $regex: escaped, $options: 'i' } },
+    ]
+  }
+  if (role.trim()) {
+    filter.roles = role.trim()
+  }
+
+  const [users, total] = await Promise.all([
+    User.find(filter)
+      .select('-passwordHash')
+      .sort({ createdAt: -1 })
+      .skip((pageNum - 1) * limitNum)
+      .limit(limitNum)
+      .lean(),
+    User.countDocuments(filter),
+  ])
+  return res.json({ users, total, page: pageNum, pages: Math.ceil(total / limitNum) })
 })
 
 /** List users pending land_owner or specialist approval */

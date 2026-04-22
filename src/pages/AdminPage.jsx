@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { adminApi } from '../lib/api'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts'
+import { adminApi, diagnosesApi } from '../lib/api'
 import { LandMapPicker } from '../components/LandMapPicker'
 
 const PROVIDER_CAT_OPTS = [
@@ -19,6 +28,33 @@ const DISCOVERY_KINDS = ['general', 'research', 'alert', 'policy']
  */
 export function AdminPage() {
   const qc = useQueryClient()
+
+  /* ── Platform stats ── */
+  const statsQ = useQuery({
+    queryKey: ['admin', 'stats'],
+    queryFn: () => adminApi.stats(),
+  })
+
+  const monthlyQ = useQuery({
+    queryKey: ['admin', 'diagnoses', 'monthly'],
+    queryFn: () => diagnosesApi.monthlyStats(),
+  })
+
+  /* ── User search ── */
+  const [userSearch, setUserSearch] = useState('')
+  const [userRole, setUserRole] = useState('')
+  const [userPage, setUserPage] = useState(1)
+
+  const usersListQ = useQuery({
+    queryKey: ['admin', 'users', userSearch, userRole, userPage],
+    queryFn: () =>
+      adminApi.usersList({
+        ...(userSearch ? { q: userSearch } : {}),
+        ...(userRole ? { role: userRole } : {}),
+        page: userPage,
+        limit: 20,
+      }),
+  })
 
   /* ── Pending approvals ── */
   const pendingQ = useQuery({
@@ -129,6 +165,172 @@ export function AdminPage() {
         Admin panel
       </h1>
 
+      {/* ── Stats tiles ── */}
+      <section>
+        <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
+          Platform overview
+        </h2>
+        {statsQ.isLoading && <p className="mt-2 text-[14px] text-[#6a6a6a]">Loading…</p>}
+        {statsQ.data && (
+          <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-5">
+            {[
+              { label: 'Total users', value: statsQ.data.totalUsers },
+              { label: 'Approved specialists', value: statsQ.data.totalSpecialists },
+              { label: 'Diagnoses run', value: statsQ.data.totalDiagnoses },
+              { label: 'Land records', value: statsQ.data.totalLands },
+              { label: 'Community posts', value: statsQ.data.totalPosts },
+            ].map(({ label, value }) => (
+              <div
+                key={label}
+                className="rounded-[14px] border border-[#ebebeb] bg-white p-4 shadow-card text-center"
+              >
+                <p className="text-[28px] font-bold text-[#222222]">{value ?? '—'}</p>
+                <p className="mt-1 text-[12px] text-[#6a6a6a]">{label}</p>
+              </div>
+            ))}
+          </div>
+        )}
+        {(monthlyQ.data?.months?.length ?? 0) > 0 && (
+          <div className="mt-6 rounded-[16px] border border-[#ebebeb] bg-white p-5 shadow-card">
+            <p className="mb-3 text-[14px] font-semibold text-[#222222]">
+              Platform diagnoses (last 12 months)
+            </p>
+            <ResponsiveContainer width="100%" height={180}>
+              <BarChart
+                data={monthlyQ.data.months.map((m) => ({
+                  month: m.month.slice(5),
+                  count: m.count,
+                }))}
+                margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6a6a6a' }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6a6a6a' }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #ebebeb' }}
+                  formatter={(v) => [v, 'Diagnoses']}
+                />
+                <Bar dataKey="count" fill="#222222" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        )}
+      </section>
+
+      {/* ── User search ── */}
+      <section>
+        <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
+          All users
+        </h2>
+        <div className="mt-3 flex flex-wrap items-center gap-3">
+          <input
+            type="search"
+            placeholder="Search name or email…"
+            value={userSearch}
+            onChange={(e) => { setUserSearch(e.target.value); setUserPage(1) }}
+            className="rounded-[8px] border border-[#dddddd] px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#222222] focus:ring-2 focus:ring-[#222222] w-60"
+          />
+          <select
+            value={userRole}
+            onChange={(e) => { setUserRole(e.target.value); setUserPage(1) }}
+            className="rounded-[8px] border border-[#dddddd] px-3 py-2 text-[14px] text-[#222222] outline-none focus:border-[#222222]"
+          >
+            <option value="">All roles</option>
+            <option value="farmer">Farmer</option>
+            <option value="land_owner">Land owner</option>
+            <option value="specialist">Specialist</option>
+            <option value="admin">Admin</option>
+          </select>
+          {usersListQ.data && (
+            <span className="text-[13px] text-[#6a6a6a]">
+              {usersListQ.data.total} result{usersListQ.data.total !== 1 ? 's' : ''}
+            </span>
+          )}
+        </div>
+        {usersListQ.isLoading && <p className="mt-3 text-[14px] text-[#6a6a6a]">Loading…</p>}
+        {usersListQ.error && <ErrBox msg={usersListQ.error.message} />}
+        {usersListQ.data && (
+          <>
+            <div className="mt-3 overflow-x-auto rounded-[14px] border border-[#ebebeb] bg-white shadow-card">
+              <table className="w-full text-left text-[13px]">
+                <thead>
+                  <tr className="border-b border-[#ebebeb] text-[#6a6a6a]">
+                    <th className="px-4 py-3 font-medium">Name</th>
+                    <th className="px-4 py-3 font-medium">Email</th>
+                    <th className="px-4 py-3 font-medium">Roles</th>
+                    <th className="px-4 py-3 font-medium">Land</th>
+                    <th className="px-4 py-3 font-medium">Specialist</th>
+                    <th className="px-4 py-3 font-medium">Joined</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {usersListQ.data.users.map((u) => (
+                    <tr key={u._id} className="border-b border-[#ebebeb] last:border-0 hover:bg-[#fafafa]">
+                      <td className="px-4 py-3 font-medium text-[#222222]">{u.name}</td>
+                      <td className="px-4 py-3 text-[#6a6a6a]">{u.email}</td>
+                      <td className="px-4 py-3 text-[#6a6a6a]">{(u.roles || []).join(', ')}</td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          u.landOwnerApproval === 'approved' ? 'bg-green-50 text-green-700' :
+                          u.landOwnerApproval === 'pending' ? 'bg-amber-50 text-amber-700' :
+                          u.landOwnerApproval === 'rejected' ? 'bg-red-50 text-red-700' :
+                          'bg-[#f2f2f2] text-[#6a6a6a]'
+                        }`}>
+                          {u.landOwnerApproval || 'n/a'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                          u.specialistApproval === 'approved' ? 'bg-blue-50 text-blue-700' :
+                          u.specialistApproval === 'pending' ? 'bg-purple-50 text-purple-700' :
+                          u.specialistApproval === 'rejected' ? 'bg-red-50 text-red-700' :
+                          'bg-[#f2f2f2] text-[#6a6a6a]'
+                        }`}>
+                          {u.specialistApproval || 'n/a'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-[#6a6a6a]">
+                        {new Date(u.createdAt).toLocaleDateString()}
+                      </td>
+                    </tr>
+                  ))}
+                  {usersListQ.data.users.length === 0 && (
+                    <tr>
+                      <td colSpan={6} className="px-4 py-6 text-center text-[14px] text-[#6a6a6a]">
+                        No users found.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+            {usersListQ.data.pages > 1 && (
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  type="button"
+                  onClick={() => setUserPage((p) => Math.max(1, p - 1))}
+                  disabled={userPage <= 1}
+                  className="rounded-[8px] border border-[#dddddd] px-3 py-1.5 text-[13px] disabled:opacity-40"
+                >
+                  Previous
+                </button>
+                <span className="text-[13px] text-[#6a6a6a]">
+                  Page {userPage} of {usersListQ.data.pages}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setUserPage((p) => Math.min(usersListQ.data.pages, p + 1))}
+                  disabled={userPage >= usersListQ.data.pages}
+                  className="rounded-[8px] border border-[#dddddd] px-3 py-1.5 text-[13px] disabled:opacity-40"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </section>
+
       {/* ── Pending approvals ── */}
       <section>
         <h2 className="text-[20px] font-semibold tracking-[-0.18px] text-[#222222]">
@@ -172,7 +374,7 @@ export function AdminPage() {
                         })
                       }
                       disabled={approvalMut.isPending}
-                      className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#ff385c] disabled:opacity-50"
+                      className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#3d7a52] disabled:opacity-50"
                     >
                       Approve
                     </button>
@@ -205,7 +407,7 @@ export function AdminPage() {
                         })
                       }
                       disabled={approvalMut.isPending}
-                      className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#ff385c] disabled:opacity-50"
+                      className="rounded-[8px] bg-[#222222] px-4 py-2 text-[13px] font-medium text-white transition hover:bg-[#3d7a52] disabled:opacity-50"
                     >
                       Approve
                     </button>
@@ -273,7 +475,7 @@ export function AdminPage() {
               type="checkbox"
               checked={modHidden}
               onChange={(e) => setModHidden(e.target.checked)}
-              className="accent-[#ff385c]"
+              className="accent-[#3d7a52]"
             />
             Hide post from feed
           </label>
@@ -286,7 +488,7 @@ export function AdminPage() {
           <button
             type="submit"
             disabled={moderateMut.isPending}
-            className="mt-5 rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50"
+            className="mt-5 rounded-[8px] bg-[#3d7a52] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50"
           >
             Apply moderation
           </button>
@@ -452,7 +654,7 @@ export function AdminPage() {
                 type="checkbox"
                 checked={discHidden}
                 onChange={(e) => setDiscHidden(e.target.checked)}
-                className="accent-[#ff385c]"
+                className="accent-[#3d7a52]"
               />
               Hidden (draft — not shown on public Discovery)
             </label>
@@ -464,7 +666,7 @@ export function AdminPage() {
             type="button"
             disabled={discoveryCreateMut.isPending || !discTitle.trim() || !discBody.trim()}
             onClick={() => discoveryCreateMut.mutate()}
-            className="mt-4 rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
+            className="mt-4 rounded-[8px] bg-[#3d7a52] px-5 py-2.5 text-[14px] font-medium text-white disabled:opacity-50"
           >
             Publish
           </button>
