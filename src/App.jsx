@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage'
 import { LandsPage } from './pages/LandsPage'
 import { RentalsPage } from './pages/RentalsPage'
 import { CommunitiesPage } from './pages/CommunitiesPage'
+import { CommunityPage } from './pages/CommunityPage'
 import { InventoryPage } from './pages/InventoryPage'
 import { AdminPage } from './pages/AdminPage'
 import { DiagnosePage } from './pages/DiagnosePage'
@@ -19,7 +20,9 @@ import { FollowingFeedPage } from './pages/FollowingFeedPage'
 import { DiscoveryPage } from './pages/DiscoveryPage'
 import { DiscoveryArticlePage } from './pages/DiscoveryArticlePage'
 import { AssistantPage } from './pages/AssistantPage'
-import { NotificationsPage } from './pages/NotificationsPage'
+import { RecommendationsPage } from './pages/RecommendationsPage'
+import { RecommendationDetailPage } from './pages/RecommendationDetailPage'
+import { AppointmentsPage } from './pages/AppointmentsPage'
 
 /**
  * Top-level routes: public marketing/auth, protected /app/* feature stubs.
@@ -39,10 +42,10 @@ export default function App() {
         }
       >
         <Route index element={<DashboardPage />} />
-        <Route path="notifications" element={<NotificationsPage />} />
         <Route path="lands" element={<LandsPage />} />
         <Route path="rentals" element={<RentalsPage />} />
         <Route path="communities" element={<CommunitiesPage />} />
+        <Route path="communities/:communityId" element={<CommunityPage />} />
         <Route path="providers" element={<ProvidersPage />} />
         <Route path="discovery" element={<DiscoveryPage />} />
         <Route path="discovery/:articleId" element={<DiscoveryArticlePage />} />
@@ -84,6 +87,18 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+        <Route
+          path="recommendations"
+          element={
+            <ProtectedRoute roles={['farmer']}>
+              <Outlet />
+            </ProtectedRoute>
+          }
+        >
+          <Route index element={<RecommendationsPage />} />
+          <Route path=":recommendationId" element={<RecommendationDetailPage />} />
+        </Route>
+        <Route path="appointments" element={<AppointmentsPage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

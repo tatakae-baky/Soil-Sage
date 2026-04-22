@@ -7,7 +7,16 @@
     "dev": "node --watch src/index.js",
     "start": "node src/index.js",
     "seed:admin": "node src/scripts/seedAdmin.js",
-    "seed:providers": "node src/scripts/seedProviders.js"
+    "seed:providers": "node src/scripts/seedProviders.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest",
+    "test:coverage": "node --experimental-vm-modules node_modules/.bin/jest --coverage"
+  },
+  "devDependencies": {
+    "@babel/preset-env": "^7.29.2",
+    "babel-jest": "^29.7.0",
+    "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.4.3",
+    "supertest": "^7.2.2"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

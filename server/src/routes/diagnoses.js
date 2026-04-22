@@ -150,6 +150,37 @@ router.get('/mine', requireAuth, requireRoles('farmer'), async (req, res) => {
   return res.json({ diagnoses, total, limit, skip })
 })
 
+/** GET /monthly-stats — monthly diagnosis counts for the last 12 months (farmer: own; admin: all) */
+router.get('/monthly-stats', requireAuth, async (req, res) => {
+  const isAdmin = (req.user.roles || []).includes('admin')
+  const match = isAdmin ? {} : { farmerId: req.user._id }
+
+  const since = new Date()
+  since.setMonth(since.getMonth() - 11)
+  since.setDate(1)
+  since.setHours(0, 0, 0, 0)
+
+  const agg = await Diagnosis.aggregate([
+    { $match: { ...match, createdAt: { $gte: since } } },
+    {
+      $group: {
+        _id: {
+          year: { $year: '$createdAt' },
+          month: { $month: '$createdAt' },
+        },
+        count: { $sum: 1 },
+      },
+    },
+    { $sort: { '_id.year': 1, '_id.month': 1 } },
+  ])
+
+  const months = agg.map(({ _id, count }) => ({
+    month: `${_id.year}-${String(_id.month).padStart(2, '0')}`,
+    count,
+  }))
+  return res.json({ months })
+})
+
 router.get('/:id', requireAuth, requireRoles('farmer'), async (req, res) => {
   if (!mongoose.isValidObjectId(req.params.id)) {
     return sendError(res, 404, 'Diagnosis not found')
