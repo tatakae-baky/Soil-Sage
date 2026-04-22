@@ -10,6 +10,23 @@ import { sendError } from '../utils/errors.js'
 
 const router = Router()
 
+/** GET /specialists — list all approved specialists (paginated) */
+router.get('/specialists', async (req, res) => {
+  const page = Math.max(1, parseInt(req.query.page, 10) || 1)
+  const limit = Math.min(50, Math.max(1, parseInt(req.query.limit, 10) || 20))
+
+  const [users, total] = await Promise.all([
+    User.find({ roles: 'specialist', specialistApproval: 'approved' })
+      .select('name profilePhotoUrl roles specialistApproval')
+      .sort({ name: 1 })
+      .skip((page - 1) * limit)
+      .limit(limit)
+      .lean(),
+    User.countDocuments({ roles: 'specialist', specialistApproval: 'approved' }),
+  ])
+  return res.json({ specialists: users, total, page, pages: Math.ceil(total / limit) })
+})
+
 /**
  * Public farmer/land-owner card: no email. Used for rental discovery trust.
  */
