@@ -7,8 +7,8 @@
 
 @theme {
   /* ── Brand ── */
-  --color-brand: #ff385c;
-  --color-brand-dark: #e00b41;
+  --color-brand: #3d7a52;
+  --color-brand-dark: #2a5c3b;
   --color-error: #c13515;
   /* Status / accents (dashboard + badges) */
   --color-accent-green: #16a34a;
