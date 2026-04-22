@@ -64,4 +64,14 @@ router.get('/nearby', async (req, res) => {
   return res.json({ providers: withDist })
 })
 
+/**
+ * Public list — returns all active providers, no coordinates required.
+ */
+router.get('/', async (_req, res) => {
+  const providers = await SolutionProvider.find({ isActive: true })
+    .sort({ name: 1 })
+    .lean()
+  return res.json({ providers })
+})
+
 export default router

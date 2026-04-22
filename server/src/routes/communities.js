@@ -14,12 +14,37 @@ const createCommunitySchema = z.object({
   description: z.string().optional().default(''),
 })
 
-router.get('/', async (_req, res) => {
+router.get('/', optionalAuth, async (req, res) => {
   const list = await Community.find().sort({ createdAt: -1 }).lean()
-  return res.json({ communities: list })
+  const communityIds = list.map((c) => c._id)
+
+  // member counts
+  const counts = await CommunityMember.aggregate([
+    { $match: { communityId: { $in: communityIds } } },
+    { $group: { _id: '$communityId', count: { $sum: 1 } } },
+  ])
+  const countMap = {}
+  for (const row of counts) countMap[row._id.toString()] = row.count
+
+  // current user memberships
+  let memberSet = new Set()
+  if (req.user) {
+    const memberships = await CommunityMember.find({
+      userId: req.user._id,
+      communityId: { $in: communityIds },
+    }).lean()
+    memberSet = new Set(memberships.map((m) => m.communityId.toString()))
+  }
+
+  const communities = list.map((c) => ({
+    ...c,
+    memberCount: countMap[c._id.toString()] || 0,
+    isMember: memberSet.has(c._id.toString()),
+  }))
+  return res.json({ communities })
 })
 
-router.post('/', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.post('/', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const parsed = createCommunitySchema.safeParse(req.body)
   if (!parsed.success) {
     return sendError(res, 400, 'Validation failed', parsed.error.flatten())
@@ -37,13 +62,28 @@ router.post('/', requireAuth, requireRoles('farmer'), async (req, res) => {
   return res.status(201).json({ community: c })
 })
 
-router.get('/:communityId', async (req, res) => {
-  const c = await Community.findById(req.params.communityId).lean()
-  if (!c) return sendError(res, 404, 'Community not found')
-  return res.json({ community: c })
+// Must be before /:communityId to avoid route conflict
+router.get('/mine', requireAuth, async (req, res) => {
+  const memberships = await CommunityMember.find({ userId: req.user._id }).lean()
+  const communityIds = memberships.map((m) => m.communityId)
+  const communities = await Community.find({ _id: { $in: communityIds } })
+    .sort({ createdAt: -1 })
+    .lean()
+  return res.json({ communities })
 })
 
-router.post('/:communityId/join', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.get('/:communityId', optionalAuth, async (req, res) => {
+  const c = await Community.findById(req.params.communityId).lean()
+  if (!c) return sendError(res, 404, 'Community not found')
+  const memberCount = await CommunityMember.countDocuments({ communityId: c._id })
+  let isMember = false
+  if (req.user) {
+    isMember = !!(await CommunityMember.exists({ communityId: c._id, userId: req.user._id }))
+  }
+  return res.json({ community: { ...c, memberCount, isMember } })
+})
+
+router.post('/:communityId/join', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const communityId = req.params.communityId
   const c = await Community.findById(communityId)
   if (!c) return sendError(res, 404, 'Community not found')
@@ -59,6 +99,14 @@ router.post('/:communityId/join', requireAuth, requireRoles('farmer'), async (re
     }
     throw e
   }
+})
+
+router.delete('/:communityId/leave', requireAuth, async (req, res) => {
+  await CommunityMember.deleteOne({
+    communityId: req.params.communityId,
+    userId: req.user._id,
+  })
+  return res.json({ ok: true })
 })
 
 /**
@@ -86,7 +134,7 @@ const createPostSchema = z.object({
   mediaUrls: z.array(z.string()).optional().default([]),
 })
 
-router.post('/:communityId/posts', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.post('/:communityId/posts', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const communityId = req.params.communityId
   const member = await CommunityMember.findOne({
     communityId,
