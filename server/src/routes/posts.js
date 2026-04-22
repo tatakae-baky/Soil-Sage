@@ -7,6 +7,7 @@ import { UserFollow } from '../models/UserFollow.js'
 import { requireAuth, optionalAuth } from '../middleware/auth.js'
 import { requireRoles } from '../middleware/rbac.js'
 import { sendError } from '../utils/errors.js'
+import { createNotification } from '../utils/notify.js'
 
 const router = Router()
 
@@ -74,7 +75,7 @@ const updatePostSchema = z.object({
   mediaUrls: z.array(z.string()).optional(),
 })
 
-router.patch('/:postId', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.patch('/:postId', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const post = await Post.findById(req.params.postId)
   if (!post || post.deletedAt) {
     return sendError(res, 404, 'Post not found')
@@ -93,7 +94,7 @@ router.patch('/:postId', requireAuth, requireRoles('farmer'), async (req, res) =
   return res.json({ post })
 })
 
-router.delete('/:postId', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.delete('/:postId', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const post = await Post.findById(req.params.postId)
   if (!post || post.deletedAt) {
     return sendError(res, 404, 'Post not found')
@@ -130,7 +131,7 @@ const createCommentSchema = z.object({
   parentCommentId: z.string().nullable().optional(),
 })
 
-router.post('/:postId/comments', requireAuth, requireRoles('farmer'), async (req, res) => {
+router.post('/:postId/comments', requireAuth, requireRoles('farmer', 'specialist'), async (req, res) => {
   const post = await Post.findById(req.params.postId)
   if (!post || post.deletedAt || post.hiddenByAdmin) {
     return sendError(res, 404, 'Post not found')
@@ -155,6 +156,16 @@ router.post('/:postId/comments', requireAuth, requireRoles('farmer'), async (req
   })
   post.commentCount = (post.commentCount || 0) + 1
   await post.save()
+  if (post.authorId.toString() !== req.user._id.toString()) {
+    await createNotification({
+      userId: post.authorId,
+      type: 'new_comment',
+      title: 'New comment on your post',
+      body: parsed.data.body.slice(0, 120),
+      relatedId: post._id,
+      relatedType: 'Post',
+    })
+  }
   return res.status(201).json({ comment })
 })
 

@@ -1,6 +1,7 @@
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
+import { ArrowLeft } from 'lucide-react'
 import { discoveryApi } from '../lib/api'
 import { useAuth } from '../hooks/useAuth'
 import { useHasRole } from '../hooks/useHasRole'
@@ -69,12 +70,12 @@ export function DiscoveryArticlePage() {
     <div className="space-y-6">
       <Link
         to="/app/discovery"
-        className="inline-block text-[14px] font-medium text-[#ff385c] underline"
+        className="inline-flex items-center gap-1 text-[14px] font-medium text-[#3d7a52] underline"
       >
-        ← Discovery feed
+        <ArrowLeft className="h-4 w-4" aria-hidden /> Discovery feed
       </Link>
 
-      {articleQ.isLoading && <p className="text-[14px] text-[#6a6a6a]">Loading…</p>}
+      {articleQ.isLoading && <p className="text-[14px] text-[#6a6a6a]">Loadingâ€¦</p>}
       {articleQ.isError && (
         <p className="text-[14px] text-[#c13515]">{articleQ.error.message}</p>
       )}
@@ -83,11 +84,11 @@ export function DiscoveryArticlePage() {
         <>
           <header className="rounded-[20px] border border-[#ebebeb] bg-white p-6 shadow-card">
             <div className="flex flex-wrap items-center gap-2 text-[12px]">
-              <span className="rounded-full bg-[#f2f2f2] px-2 py-0.5 font-semibold text-[#222222]">
+              <span className="rounded-lg bg-[#f2f2f2] px-2 py-0.5 font-semibold text-[#222222]">
                 {KIND_LABEL[a.kind] || a.kind}
               </span>
               <span className="text-[#6a6a6a]">
-                {a.authorId?.name ? `By ${a.authorId.name}` : ''} ·{' '}
+                {a.authorId?.name ? `By ${a.authorId.name}` : ''} Â·{' '}
                 {a.createdAt ? new Date(a.createdAt).toLocaleString() : ''}
               </span>
             </div>
@@ -135,7 +136,7 @@ export function DiscoveryArticlePage() {
           <section>
             <h2 className="text-[18px] font-semibold text-[#222222]">Comments</h2>
             {commentsQ.isLoading && (
-              <p className="mt-2 text-[14px] text-[#6a6a6a]">Loading comments…</p>
+              <p className="mt-2 text-[14px] text-[#6a6a6a]">Loading commentsâ€¦</p>
             )}
             <ul className="mt-4 space-y-3">
               {comments.map((c) => (
@@ -154,7 +155,7 @@ export function DiscoveryArticlePage() {
                     <button
                       type="button"
                       onClick={() => setReplyToId(c._id)}
-                      className="mt-2 text-[12px] font-medium text-[#ff385c] underline"
+                      className="mt-2 text-[12px] font-medium text-[#3d7a52] underline"
                     >
                       Reply
                     </button>
@@ -178,7 +179,7 @@ export function DiscoveryArticlePage() {
                     <button
                       type="button"
                       onClick={() => setReplyToId(null)}
-                      className="font-medium text-[#ff385c] underline"
+                      className="font-medium text-[#3d7a52] underline"
                     >
                       Cancel
                     </button>
@@ -192,13 +193,13 @@ export function DiscoveryArticlePage() {
                   onChange={(e) => setBody(e.target.value)}
                   rows={3}
                   className="w-full rounded-[8px] border border-[#dddddd] bg-white px-3 py-2 text-[14px] outline-none focus:border-[#222222]"
-                  placeholder="Share experience or ask a clarifying question…"
+                  placeholder="Share experience or ask a clarifying questionâ€¦"
                 />
                 {commentErr && <p className="mt-2 text-[13px] text-[#c13515]">{commentErr}</p>}
                 <button
                   type="submit"
                   disabled={commentMut.isPending || !body.trim()}
-                  className="mt-3 rounded-[8px] bg-[#ff385c] px-4 py-2 text-[14px] font-medium text-white disabled:opacity-50"
+                  className="mt-3 rounded-[8px] bg-[#3d7a52] px-4 py-2 text-[14px] font-medium text-white disabled:opacity-50"
                 >
                   Post comment
                 </button>
@@ -214,3 +215,4 @@ export function DiscoveryArticlePage() {
     </div>
   )
 }
+

@@ -7,6 +7,7 @@ import { Comment } from '../models/Comment.js'
 import { requireAuth } from '../middleware/auth.js'
 import { requireRoles } from '../middleware/rbac.js'
 import { sendError } from '../utils/errors.js'
+import { createNotification } from '../utils/notify.js'
 
 const router = Router()
 
@@ -42,7 +43,21 @@ router.post('/', requireAuth, requireRoles('farmer'), async (req, res) => {
       targetId,
     })
     if (targetType === 'post') {
-      await Post.findByIdAndUpdate(targetId, { $inc: { likeCount: 1 } })
+      const updatedPost = await Post.findByIdAndUpdate(
+        targetId,
+        { $inc: { likeCount: 1 } },
+        { new: true }
+      )
+      if (updatedPost && updatedPost.authorId.toString() !== req.user._id.toString()) {
+        await createNotification({
+          userId: updatedPost.authorId,
+          type: 'new_like',
+          title: 'Someone liked your post',
+          body: updatedPost.body?.slice(0, 80) || '',
+          relatedId: updatedPost._id,
+          relatedType: 'Post',
+        })
+      }
     }
     return res.status(201).json({ ok: true })
   } catch (e) {
