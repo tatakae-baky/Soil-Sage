@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { X, ChevronUp, ChevronDown } from 'lucide-react'
 import { chatApi } from '../lib/api'
 
 const STORAGE_KEY = 'soil_sage_chat_sessions'
@@ -264,7 +265,7 @@ export function AssistantPage() {
         onClick={() => setSessionsOpen((o) => !o)}
       >
         <span>Chats ({sessions.length})</span>
-        <span aria-hidden>{sessionsOpen ? '▲' : '▼'}</span>
+        <span aria-hidden>{sessionsOpen ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}</span>
       </button>
 
       {/* Sessions sidebar */}
@@ -306,7 +307,7 @@ export function AssistantPage() {
                 className="absolute right-1 top-1 rounded p-1 text-[10px] text-text-secondary opacity-0 transition hover:bg-red-50 hover:text-error group-hover:opacity-100"
                 aria-label={`Delete ${s.title}`}
               >
-                ✕
+                <X className="h-3 w-3" aria-hidden />
               </button>
             </div>
           ))}

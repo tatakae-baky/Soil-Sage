@@ -19,7 +19,7 @@ export function HomePage() {
         <div className="mt-10 flex flex-wrap justify-center gap-4">
           <Link
             to="/login"
-            className="rounded-[8px] bg-[#222222] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#ff385c]"
+            className="rounded-[8px] bg-[#222222] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#3d7a52]"
           >
             Log in
           </Link>

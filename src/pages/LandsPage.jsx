@@ -207,7 +207,7 @@ export function LandsPage() {
               setEditingId(null)
               setForm({ ...EMPTY })
             }}
-            className="rounded-[8px] bg-[#222222] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#ff385c]"
+            className="rounded-[8px] bg-[#222222] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#3d7a52]"
           >
             + Add land
           </button>
@@ -283,7 +283,7 @@ export function LandsPage() {
               type="checkbox"
               checked={form.availableForRent}
               onChange={(e) => set('availableForRent', e.target.checked)}
-              className="accent-[#ff385c]"
+              className="accent-[#3d7a52]"
             />
             Available for rent (requires approved land owner account)
           </label>
@@ -292,7 +292,7 @@ export function LandsPage() {
             <button
               type="submit"
               disabled={createMut.isPending || updateMut.isPending}
-              className="rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50"
+              className="rounded-[8px] bg-[#3d7a52] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50"
             >
               {editingId ? 'Save changes' : 'Create land'}
             </button>
@@ -415,7 +415,7 @@ export function LandsPage() {
           <button
             type="button"
             onClick={runNearbySearch}
-            className="rounded-[8px] bg-[#222222] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#ff385c]"
+            className="rounded-[8px] bg-[#222222] px-6 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#3d7a52]"
           >
             Search
           </button>
@@ -486,7 +486,7 @@ export function LandsPage() {
                       {land.ownerId?._id ? (
                         <Link
                           to={`/app/users/${land.ownerId._id}`}
-                          className="font-medium text-[#ff385c] underline hover:text-[#e00b41]"
+                          className="font-medium text-[#3d7a52] underline hover:text-[#2a5c3b]"
                         >
                           {land.ownerId?.name || 'View profile'}
                         </Link>
@@ -557,7 +557,7 @@ export function LandsPage() {
                 >
                   <Link
                     to={`/app/users/${row.owner._id}`}
-                    className="text-[15px] font-semibold text-[#ff385c] underline"
+                    className="text-[15px] font-semibold text-[#3d7a52] underline"
                   >
                     {row.owner.name}
                   </Link>

@@ -135,6 +135,27 @@ export const usersApi = {
   updateMe: (body) => api('/users/me', { method: 'PATCH', json: body }),
   /** Public profile card (no email) */
   publicProfile: (userId) => api(`/users/public/${userId}`),
+  /** List all approved specialists */
+  specialists: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/users/specialists?${q}` : '/users/specialists')
+  },
+}
+
+/* ─── Appointments ─── */
+export const appointmentsApi = {
+  create: (body) => api('/appointments', { method: 'POST', json: body }),
+  outgoing: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/appointments/outgoing?${q}` : '/appointments/outgoing')
+  },
+  incoming: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/appointments/incoming?${q}` : '/appointments/incoming')
+  },
+  updateStatus: (id, body) =>
+    api(`/appointments/${id}/status`, { method: 'PATCH', json: body }),
+  remove: (id) => api(`/appointments/${id}`, { method: 'DELETE' }),
 }
 
 /* ─── Lands ─── */
@@ -176,9 +197,11 @@ export const notificationsApi = {
 /* ─── Communities ─── */
 export const communitiesApi = {
   list: () => api('/communities'),
+  mine: () => api('/communities/mine'),
   create: (body) => api('/communities', { method: 'POST', json: body }),
   getOne: (id) => api(`/communities/${id}`),
   join: (id) => api(`/communities/${id}/join`, { method: 'POST' }),
+  leave: (id) => api(`/communities/${id}/leave`, { method: 'DELETE' }),
   posts: (id) => api(`/communities/${id}/posts`),
   createPost: (id, body) =>
     api(`/communities/${id}/posts`, { method: 'POST', json: body }),
@@ -199,8 +222,9 @@ export const postsApi = {
     api(`/posts/${id}/comments`, { method: 'POST', json: body }),
 }
 
-/* ─── Solution providers (nearby map) ─── */
+/* ─── Solution providers ─── */
 export const providersApi = {
+  list: () => api('/providers'),
   nearby: (params) => {
     const q = new URLSearchParams(params).toString()
     return api(`/providers/nearby?${q}`)
@@ -382,10 +406,16 @@ export const diagnosesApi = {
     return api(q ? `/diagnoses/mine?${q}` : '/diagnoses/mine')
   },
   getOne: (id) => api(`/diagnoses/${id}`),
+  monthlyStats: () => api('/diagnoses/monthly-stats'),
 }
 
 /* ─── Admin ─── */
 export const adminApi = {
+  stats: () => api('/admin/stats'),
+  usersList: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/admin/users?${q}` : '/admin/users')
+  },
   pendingApprovals: () => api('/admin/pending-approvals'),
   setApproval: (body) =>
     api('/admin/approvals', { method: 'PATCH', json: body }),
@@ -404,4 +434,26 @@ export const adminApi = {
     api(`/admin/discovery/articles/${id}`, { method: 'PATCH', json: body }),
   discoveryArticleDelete: (id) =>
     api(`/admin/discovery/articles/${id}`, { method: 'DELETE' }),
+}
+
+/* ─── Specialist reviews ─── */
+export const reviewsApi = {
+  list: (specialistId, params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/reviews/specialists/${specialistId}?${q}` : `/reviews/specialists/${specialistId}`)
+  },
+  create: (specialistId, body) =>
+    api(`/reviews/specialists/${specialistId}`, { method: 'POST', json: body }),
+  remove: (specialistId) =>
+    api(`/reviews/specialists/${specialistId}`, { method: 'DELETE' }),
+}
+
+/* ─── Crop recommendations ─── */
+export const recommendationsApi = {
+  create: (body) => api('/recommendations', { method: 'POST', json: body }),
+  list: (params = {}) => {
+    const q = new URLSearchParams(params).toString()
+    return api(q ? `/recommendations?${q}` : '/recommendations')
+  },
+  get: (id) => api(`/recommendations/${id}`),
 }

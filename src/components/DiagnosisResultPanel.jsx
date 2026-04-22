@@ -7,6 +7,8 @@
  * @param {Record<string, unknown>} props.diagnosis API `diagnosis` object (`result`, `disclaimer`, `model`)
  * @param {import('react').ReactNode} [props.afterDisclaimer] Extra row(s) below the model line (e.g. nav links)
  */
+import { Check } from 'lucide-react'
+
 export function DiagnosisResultPanel({ title = 'Diagnosis result', diagnosis, afterDisclaimer }) {
   const r = diagnosis?.result || {}
   const issues = Array.isArray(r.likelyIssues) ? r.likelyIssues : []
@@ -90,10 +92,10 @@ export function DiagnosisResultPanel({ title = 'Diagnosis result', diagnosis, af
                   className="flex gap-3 rounded-xl border border-border-light bg-white px-4 py-3 shadow-sm"
                 >
                   <span
-                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-brand text-[10px] font-bold text-brand"
+                    className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 border-brand text-brand"
                     aria-hidden
                   >
-                    ✓
+                    <Check className="h-3 w-3" strokeWidth={3} />
                   </span>
                   <div>
                     <p className="font-semibold text-text-primary">{a.title}</p>

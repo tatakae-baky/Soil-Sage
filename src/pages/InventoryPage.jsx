@@ -113,7 +113,7 @@ export function InventoryPage() {
         {!showForm && (
           <button
             onClick={() => { setShowForm(true); setEditingId(null); setForm({ ...EMPTY_ITEM }) }}
-            className="rounded-[8px] bg-[#222222] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#ff385c]"
+            className="rounded-[8px] bg-[#222222] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#3d7a52]"
           >
             + Add item
           </button>
@@ -150,7 +150,7 @@ export function InventoryPage() {
           </div>
           {formError && <p className="mt-3 text-[14px] text-[#c13515]">{formError}</p>}
           <div className="mt-5 flex gap-3">
-            <button type="submit" disabled={createMut.isPending || updateMut.isPending} className="rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50">
+            <button type="submit" disabled={createMut.isPending || updateMut.isPending} className="rounded-[8px] bg-[#3d7a52] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50">
               {editingId ? 'Save' : 'Add'}
             </button>
             <button type="button" onClick={resetForm} className="rounded-[8px] border border-[#dddddd] px-5 py-2.5 text-[14px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]">
@@ -183,7 +183,7 @@ export function InventoryPage() {
           </div>
           {usageMut.error && <p className="mt-3 text-[14px] text-[#c13515]">{usageMut.error.message}</p>}
           <div className="mt-5 flex gap-3">
-            <button type="submit" disabled={usageMut.isPending} className="rounded-[8px] bg-[#ff385c] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50">
+            <button type="submit" disabled={usageMut.isPending} className="rounded-[8px] bg-[#3d7a52] px-5 py-2.5 text-[14px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50">
               Log
             </button>
             <button type="button" onClick={() => setUsageTarget(null)} className="rounded-[8px] border border-[#dddddd] px-5 py-2.5 text-[14px] font-medium text-[#222222] transition hover:bg-[#f2f2f2]">

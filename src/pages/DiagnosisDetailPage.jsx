@@ -39,13 +39,13 @@ export function DiagnosisDetailPage() {
         <div className="flex flex-wrap gap-2">
           <Link
             to={providersTo}
-            className="rounded-[8px] border border-[#ff385c] px-4 py-2 text-[14px] font-medium text-[#ff385c] transition hover:bg-red-50"
+            className="rounded-[8px] border border-[#3d7a52] px-4 py-2 text-[14px] font-medium text-[#3d7a52] transition hover:bg-red-50"
           >
             Find nearby stores / services
           </Link>
           <Link
             to="/app/diagnose"
-            className="rounded-[8px] bg-[#ff385c] px-4 py-2 text-[14px] font-medium text-white transition hover:bg-[#e00b41]"
+            className="rounded-[8px] bg-[#3d7a52] px-4 py-2 text-[14px] font-medium text-white transition hover:bg-[#2a5c3b]"
           >
             New diagnosis
           </Link>
@@ -85,7 +85,7 @@ export function DiagnosisDetailPage() {
             afterDisclaimer={
               <p className="mt-3 text-[13px] text-[#6a6a6a]">
                 This is a saved report — there is no live chat. Run a{' '}
-                <Link to="/app/diagnose" className="font-medium text-[#ff385c] underline">
+                <Link to="/app/diagnose" className="font-medium text-[#3d7a52] underline">
                   new diagnosis
                 </Link>{' '}
                 with fresh photos if conditions change.

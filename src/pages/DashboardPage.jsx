@@ -1,5 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  ResponsiveContainer,
+  CartesianGrid,
+} from 'recharts'
+import { Layers, Package, Bell, Users, Sparkles, ArrowRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useHasRole } from '../hooks/useHasRole'
 import {
@@ -34,10 +44,16 @@ export function DashboardPage() {
     refetchInterval: 12_000,
     refetchIntervalInBackground: false,
   })
-  const commQ = useQuery({ queryKey: ['communities'], queryFn: () => communitiesApi.list() })
+  const commQ = useQuery({ queryKey: ['communities', 'mine'], queryFn: () => communitiesApi.mine() })
   const diagQ = useQuery({
     queryKey: ['diagnoses', 'recent'],
     queryFn: () => diagnosesApi.mine({ limit: 5 }),
+    enabled: isFarmer,
+  })
+
+  const monthlyQ = useQuery({
+    queryKey: ['diagnoses', 'monthly'],
+    queryFn: () => diagnosesApi.monthlyStats(),
     enabled: isFarmer,
   })
 
@@ -89,44 +105,28 @@ export function DashboardPage() {
       value: landCount,
       hint: landsHint,
       to: '/app/lands',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 15a4.5 4.5 0 004.5 4.5H18a3.75 3.75 0 001.332-7.257 3 3 0 00-3.864 0 4.5 4.5 0 00-8.268 0A3.75 3.75 0 002.25 15z" />
-        </svg>
-      ),
+      icon: <Layers className="h-5 w-5" aria-hidden />,
     },
     {
       label: 'Inventory items',
       value: itemCount,
       hint: invHint,
       to: '/app/inventory',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-        </svg>
-      ),
+      icon: <Package className="h-5 w-5" aria-hidden />,
     },
     {
       label: 'Unread notifications',
       value: unreadCount,
       hint: notifHint,
       to: '/app/notifications',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M14.857 17.082a23.848 23.848 0 005.454-1.31A8.967 8.967 0 0118 9.75v-.113V9A6 6 0 006 9v.75a8.967 8.967 0 01-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 01-5.714 0m5.714 0a3.75 3.75 0 11-5.714 0" />
-        </svg>
-      ),
+      icon: <Bell className="h-5 w-5" aria-hidden />,
     },
     {
       label: 'Communities',
       value: communityCount,
       hint: commHint,
       to: '/app/communities',
-      icon: (
-        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
-          <path strokeLinecap="round" strokeLinejoin="round" d="M18 18.72a9.09 9.09 0 003.741-.479 3 3 0 00-4.682-2.72m.94 3.198l.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0112 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 016 18.719m12 0a5.971 5.971 0 00-.941-3.197m0 0A5.995 5.995 0 0012 12.75a5.995 5.995 0 00-5.058 2.772m0 0a3 3 0 00-4.681 2.72 8.986 8.986 0 003.74.477m0 0 .001-.193M12 12.75c-2.486 0-4.5-2.014-4.5-4.5S9.514 3.75 12 3.75s4.5 2.014 4.5 4.5-2.014 4.5-4.5 4.5z" />
-        </svg>
-      ),
+      icon: <Users className="h-5 w-5" aria-hidden />,
     },
     ...(isFarmer
       ? [
@@ -135,11 +135,7 @@ export function DashboardPage() {
             value: diagnosisCount,
             hint: diagHint,
             to: '/app/diagnose',
-            icon: (
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" aria-hidden>
-                <path strokeLinecap="round" strokeLinejoin="round" d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z" />
-              </svg>
-            ),
+            icon: <Sparkles className="h-5 w-5" aria-hidden />,
           },
         ]
       : []),
@@ -232,8 +228,8 @@ export function DashboardPage() {
                     {d.result?.summary?.slice(0, 120)}
                     {(d.result?.summary?.length || 0) > 120 ? '…' : ''}
                   </p>
-                  <span className="shrink-0 text-xs font-semibold text-brand" aria-hidden>
-                    View →
+                  <span className="shrink-0 inline-flex items-center gap-0.5 text-xs font-semibold text-brand" aria-hidden>
+                    View <ArrowRight className="h-3.5 w-3.5" />
                   </span>
                 </div>
                 <p className="mt-1 text-xs text-text-secondary">
@@ -250,6 +246,35 @@ export function DashboardPage() {
                 .
               </p>
             )}
+          </div>
+        </section>
+      )}
+
+      {/* ── Diagnoses chart (farmers) ── */}
+      {isFarmer && (monthlyQ.data?.months?.length ?? 0) > 0 && (
+        <section>
+          <h2 className="mb-4 text-lg font-semibold tracking-tight text-text-primary">
+            Your diagnoses (last 12 months)
+          </h2>
+          <div className="rounded-[16px] border border-[#ebebeb] bg-white p-5 shadow-card">
+            <ResponsiveContainer width="100%" height={200}>
+              <BarChart
+                data={monthlyQ.data.months.map((m) => ({
+                  month: m.month.slice(5),
+                  count: m.count,
+                }))}
+                margin={{ top: 4, right: 4, left: -16, bottom: 0 }}
+              >
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#6a6a6a' }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11, fill: '#6a6a6a' }} />
+                <Tooltip
+                  contentStyle={{ fontSize: 12, borderRadius: 8, border: '1px solid #ebebeb' }}
+                  formatter={(v) => [v, 'Diagnoses']}
+                />
+                <Bar dataKey="count" fill="#3d7a52" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
           </div>
         </section>
       )}
