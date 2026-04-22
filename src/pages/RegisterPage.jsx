@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Link, Navigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -115,7 +115,7 @@ export function RegisterPage() {
                     type="checkbox"
                     checked={roles.includes(opt.value)}
                     onChange={() => toggleRole(opt.value)}
-                    className="accent-[#ff385c]"
+                    className="accent-[#3d7a52]"
                   />
                   {opt.label}
                 </label>
@@ -144,7 +144,7 @@ export function RegisterPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-[8px] bg-[#ff385c] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50"
+            className="w-full rounded-[8px] bg-[#3d7a52] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50"
           >
             {submitting ? 'Creating…' : 'Sign up'}
           </button>

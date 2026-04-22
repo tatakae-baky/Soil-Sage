@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import React, { useState } from 'react'
 import { Link, Navigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
@@ -71,7 +71,7 @@ export function LoginPage() {
           <button
             type="submit"
             disabled={submitting}
-            className="w-full rounded-[8px] bg-[#ff385c] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#e00b41] disabled:opacity-50"
+            className="w-full rounded-[8px] bg-[#3d7a52] px-6 py-3 text-[16px] font-medium text-white transition hover:bg-[#2a5c3b] disabled:opacity-50"
           >
             {submitting ? 'Signing in…' : 'Continue'}
           </button>
